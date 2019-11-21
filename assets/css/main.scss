@@ -1,0 +1,19 @@
+---
+---
+@import "jekyll-theme-prologue";
+
+.smallcopyright {
+	font-size: 9pt;
+}
+
+#footer {
+	padding: 1.5em 0 1.5em 0
+}
+
+#logo #title {
+	color: #d85a28;
+}
+
+#nav ul li a.active span::before {
+	color: #944222;
+}
