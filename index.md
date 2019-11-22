@@ -1,6 +1,6 @@
 ---
 layout: home
 title: Home
-icon: fa-home
+icon: fa-cube
 order: 1
 ---

@@ -1,19 +1,65 @@
 ---
 ---
 @import "jekyll-theme-prologue";
+@import "monokai.css";
 
-.smallcopyright {
-	font-size: 9pt;
+// Headings
+body {
+	font-family: 'Source Sans Pro', sans-serif;
+	font-weight: 300;
 }
 
-#footer {
-	padding: 1.5em 0 1.5em 0
+article.shade-two {
+	padding-top: 23px !important;
 }
 
+article header h2 {
+	font-size: 2em;
+	padding: 0;
+}
+
+article header p {
+	font-size: 1.1em;
+	margin: 0;
+	color: #aaa;
+}
+
+article h1 {
+	font-size: 1.5em;
+	padding-bottom: 0.3em;
+}
+
+article h2 {
+	font-size: 1.2em;
+	padding-bottom: 0.3em;
+}
+
+p {
+	line-height: 1.5em;
+}
+
+// Code boxes
+code {
+	font-size: 11pt;
+	padding-top: 5pt !important;
+	padding-bottom: 5pt !important;
+}
+
+// Navigation style overrides
 #logo #title {
+	font-size: 1.3em;
 	color: #d85a28;
 }
 
 #nav ul li a.active span::before {
 	color: #944222;
+}
+
+// Footer style overrides
+#footer {
+	padding: 1.5em 0 1.5em 0
+}
+
+.smallcopyright {
+	font-size: 9pt;
 }
