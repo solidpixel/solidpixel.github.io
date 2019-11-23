@@ -25,17 +25,32 @@ article header p {
 }
 
 article h1 {
-	font-size: 1.5em;
+	font-size: 1.7em;
 	padding-bottom: 0.3em;
 }
 
 article h2 {
-	font-size: 1.2em;
+	font-size: 1.3em;
 	padding-bottom: 0.3em;
+}
+
+article p {
+	margin-bottom: 1em;
 }
 
 p {
 	line-height: 1.5em;
+}
+
+#main > section p {
+	text-align: left;
+}
+
+.center-image {
+	margin: 0 auto;
+	display: block;
+	max-width: 100%;
+	height: auto;
 }
 
 // Code boxes
@@ -53,6 +68,14 @@ code {
 
 #nav ul li a.active span::before {
 	color: #944222;
+}
+
+#nav ul li a {
+	line-height: 1em;
+}
+
+#nav ul li a span::before {
+	line-height: 1.15em;
 }
 
 // Footer style overrides
