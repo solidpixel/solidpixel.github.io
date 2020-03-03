@@ -180,7 +180,7 @@ The faster performance does come with some downsides; most images I've
 inspected have block artifacts in areas with fast chroma or luma changes. These
 same issues also occur when using astcenc in `-fast` mode, but the ISPC
 compressor has no route available to higher quality, whereas astcenc can at
-least fall back on it's built-in slower search presets.
+least fall back on its built-in slower search presets.
 
 It's also worth remembering that the current ISPC-ASTC compressor only
 implements a subset of the standard:
