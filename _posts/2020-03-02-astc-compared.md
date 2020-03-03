@@ -151,17 +151,20 @@ it seems to be much better than astcenc in `-fast` (shown below), and even
 in the green background in the ISPC image, but they are less noticeable than
 the astcenc `-medium` image adjacent to it.
 
-This highlights one of the flaws in astcenc; it's search algorithm does
-sometimes tend towards smooth block colors which can really stand out in an
-image if surrounding blocks are not smooth, and smooth blocks will often fail
-to generate good gradients, so gradients can look like mosaic tiles ...
+This highlights one of the flaws in astcenc; its search algorithm does
+sometimes tend towards smooth block colors (by using accurate end-points, but
+decimated weight grids which "smooth" out the noise). These blocks can really
+stand out in an image if surrounding blocks are not smooth, and smooth blocks
+will often fail to generate good gradients, so gradients can start to look like
+Minecraft screenshots ...
 
 ![6x6 astcenc fast]({{ "../../../assets/images/astcispc/blocky.png" | relative_url }}){:.center-image}
 
-The good news got astcenc is that most of this can be solved by the application
-of processing power to search more block encodings. Throwing `-thorough` at the
-problem makes the gradient issues go away and the final image is very close
-to the original. Not bad for a 3.56bpp texture format ...
+The good news is that this isn't a limitation of the format; and for astcenc
+the problem can be solved by the application of processing power to search more
+block encodings. Throwing `-thorough` at the problem makes the gradient issues
+go away and the final image is very close to the original. Not bad for a
+3.56bpp encoding ...
 
 
 Summary
@@ -176,8 +179,8 @@ expected.
 The faster performance does come with some downsides; most images I've
 inspected have block artifacts in areas with fast chroma or luma changes. These
 same issues also occur when using astcenc in `-fast` mode, but the ISPC
-compressor has route to higher quality, whereas astcenc can at least fall back
-on some slower search presets.
+compressor has no route available to higher quality, whereas astcenc can at
+least fall back on it's built-in slower search presets.
 
 It's also worth remembering that the current ISPC-ASTC compressor only
 implements a subset of the standard:
