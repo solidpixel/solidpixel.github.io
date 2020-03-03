@@ -87,3 +87,11 @@ code {
 .smallcopyright {
 	font-size: 9pt;
 }
+
+article blockquote p:last-child {
+  margin-bottom: 0px;
+}
+
+article blockquote + p {
+  margin-top: 1em;
+}
