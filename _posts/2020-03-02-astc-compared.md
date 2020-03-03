@@ -153,10 +153,10 @@ the astcenc `-medium` image adjacent to it.
 
 This highlights one of the flaws in astcenc; its search algorithm does
 sometimes tend towards smooth block colors (by using accurate end-points, but
-decimated weight grids which "smooth" out the noise). These blocks can really
-stand out in an image if surrounding blocks are not smooth, and smooth blocks
-will often fail to generate good gradients, so gradients can start to look like
-Minecraft screenshots ...
+decimated weight grids which smooth out high frequencies). These blocks can
+really stand out in an image if surrounding blocks are not smooth, and smooth
+blocks will often fail to generate good gradients, so gradients can start to
+look like Minecraft screenshots ...
 
 ![6x6 astcenc fast]({{ "../../../assets/images/astcispc/blocky.png" | relative_url }}){:.center-image}
 
