@@ -93,12 +93,12 @@ These are relatively large quality deficits, albeit starting from a relatively
 high quality starting point (average quality is 43.9 dB) so the perceptual
 impact is lower.
 
-For 5x5 blocks the situation reverses, and ISPC-ASTC beats astcenc `-fast` for
+For 6x6 blocks the situation reverses, and ISPC-ASTC beats astcenc `-fast` for
 all but seven images, with an average PSNR gain of 0.2 dB. Its still worse than
 astcenc `-medium` and `-thorough`, but the gap closes to 0.5 and 0.7 dB
 respectively.
 
-For 6x6 blocks it pulls a little further ahead of `-fast` (0.3 dB), but drops
+For 8x8 blocks it pulls a little further ahead of `-fast` (0.3 dB), but drops
 away from `-medium` and `-thorough` with the gap increasing to 0.6 an 0.9 dB
 respectively.
 
@@ -153,10 +153,10 @@ the astcenc `-medium` image adjacent to it.
 
 This highlights one of the flaws in astcenc; its search algorithm does
 sometimes tend towards smooth block colors (by using accurate end-points, but
-decimated weight grids which smooth out high frequencies). These blocks can
-really stand out in an image if surrounding blocks are not smooth, and smooth
-blocks will often fail to generate good gradients, so gradients can start to
-look like Minecraft screenshots ...
+decimated weight grids which smooth out high frequencies). These blocks can really
+stand out in an image if surrounding blocks are not smooth, and smooth blocks
+will often fail to generate good gradients, so gradients can start to look like
+Minecraft screenshots ...
 
 ![6x6 astcenc fast]({{ "../../../assets/images/astcispc/blocky.png" | relative_url }}){:.center-image}
 
