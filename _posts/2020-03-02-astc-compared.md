@@ -99,7 +99,7 @@ astcenc `-medium` and `-thorough`, but the gap closes to 0.5 and 0.7 dB
 respectively.
 
 For 8x8 blocks it pulls a little further ahead of `-fast` (0.3 dB), but drops
-away from `-medium` and `-thorough` with the gap increasing to 0.6 an 0.9 dB
+away from `-medium` and `-thorough` with the gap increasing to 0.6 and 0.9 dB
 respectively.
 
 
