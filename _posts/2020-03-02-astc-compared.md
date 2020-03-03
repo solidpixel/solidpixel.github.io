@@ -1,5 +1,5 @@
 ---
-title: ASTC Compressors Compared
+title: ASTC compressors compared
 layout: post
 ---
 
