@@ -114,10 +114,10 @@ as two component normal maps so use it with care in these scenarios. However,
 it does what it does well and it is fast.
 
 The next question to answer in terms of quality is therefore what does the
-additional 0.5 - 1.0 dB of image quality that using astcenc with `-medium`
-or `-thorough` actually give? A human can generally "see" differences around
-0.25 dB unaided, and it's a log scale, so 1.0 dB is quite a large difference
-in image quality.
+additional 0.5 - 1.0 dB of image quality that using astcenc with `-medium` or
+`-thorough` actually give, assuming you are willing to spend the CPU time? A
+human can generally "see" differences around 0.25 dB unaided, and it's a log
+scale, so 1.0 dB is quite a large difference in image quality.
 
 This is harder to quantify just looking at numbers, because PSNR doesn't really
 give much feel for what an image actually looks like, so let's look at some
