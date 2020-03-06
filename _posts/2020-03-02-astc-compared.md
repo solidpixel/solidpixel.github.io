@@ -167,20 +167,100 @@ go away and the final image is very close to the original. Not bad for a
 3.56bpp encoding ...
 
 
+Non-photographic data
+=====================
+
+**UPDATE** After the original publication of this blog, I ran some other tests
+on some non-photographic data, as the Kodak tests only represent one type of
+image that the compressor would be asked to compress. The results were quite
+different to the original results, so I felt it was worth making sure they got
+a mention for posterity.
+
+Cartoon-like color data
+-----------------------
+
+The Rex graphic, by William Frymire, is a relatively well known torture test
+for texture compressors. It contains lots of interesting patterns - fast chroma
+changes, fast luma changes, straight gradients, radial gradients, and complex
+patterns.
+
+While it seems artificial to have all of these mixed together in such density,
+everything in this image is something that you could reasonably expect to see
+in games using a more cartoon-like art style.
+
+For a 6x6 block size the results for this test are:
+
+![6x6 Rex]({{ "../../../assets/images/astcispc/rex.png" | relative_url }}){:.center-image}
+
+| Compressor        | PSNR    | Coding Time |
+| ------------------| ------- | ----------- |
+| ISPC texcomp      | 29.8 dB | 1.6s        |
+| astcenc -fast     | 35.7 dB | 0.83s       |
+| astcenc -thorough | 39.8 dB | 4.97s       |
+
+Not only is ISPC texcomp slower than astcenc `-fast` for this test, it has a
+massive quality deficit of 6 dB (10dB vs astcenc `-thorough`). Every 3 dB
+equates to a doubling in signal strength, so 6-10 dB is a very large quality
+gap indeed. Just looking at the image it is clear that there are very bad block
+artifacts in almost every part of the image.
+
+Normal maps
+-----------
+
+The final type of data that I looked at was normal maps. Normals are hard to
+compress; as vectors rotate around the X, Y, and Z components move somewhat
+independently so the data tends towards being non-correlated. To free up some
+bitrate to improve quality, one common trick is to store only the X and Y
+components of unit length normals, recovering Z programmatically in shader
+code.
+
+For ASTC we can store X+Y normal maps efficiently by exploiting the L+A color
+end point, so for this we pre-swizzle the data given to the compressor to
+`xxxy` layout. Even with this, 6x6 blocks tend to be a bit tight for bitrate.
+Any shader computation, such as specular lighting calculation, can amplify the
+visual impact of errors so we really want to avoid badly compressed normals. We
+commonly recommend that X+Y normal maps therefore use the 5x5 block size (5.12
+bpp).
+
+For a 5x5 block size the results for this test are:
+
+![5x5 Normals]({{ "../../../assets/images/astcispc/normals.png" | relative_url }}){:.center-image}
+
+| Compressor        | PSNR    | Coding Time |
+| ------------------| ------- | ----------- |
+| ISPC texcomp      | 41.0 dB | 1.7s        |
+| astcenc -fast     | 41.9 dB | 0.45s       |
+| astcenc -medium   | 43.5 dB | 2.0s        |
+
+Again, for this test ISPC texcomp is both slower and lower quality than astcenc
+in `-fast` mode. It's worth noting that both of these suffer block artifacts,
+which is not ideal for normal maps. The good news is that this isn't a
+limitation of the format, and we can remove them by using more processing power
+and astcenc `-medium` ...
+
 Summary
 =======
 
-ISPC-ASTC is a useful compressor that gives faster performance, and in some
-cases better quality, than astcenc `-fast`. Optimizations to astcenc have
-closed the performance gap, so the real-world performance difference is no
-longer the 44x claimed on the project page, but up to 4x for some images can be
-expected.
+**UPDATE** Summary updated based on the non-photographic results.
+
+ISPC texcomp is a useful ASTC compressor that can give faster performance and
+better quality, in some cases, than astcenc in `-fast` mode. Optimizations to
+astcenc have closed the performance gap, so the real-world performance
+difference is no longer the 44x claimed on the project page, but up to 4x for
+some images can be expected.
 
 The faster performance does come with some downsides; most images I've
-inspected have block artifacts in areas with fast chroma or luma changes. These
-same issues also occur when using astcenc in `-fast` mode, but the ISPC
-compressor has no route available to higher quality, whereas astcenc can at
-least fall back on its built-in slower search presets.
+inspected have block artifacts in areas with fast chroma or luma changes.It
+seems particularly weak at images which are not photographic color data, often
+suffering both worse quality and worse performance than astcenc when
+compressing these.
+
+In cases where quality issues such as block artifacts are observed, astcenc
+`-fast` often has a similar problem. However ISPC texcomp has no route
+available to higher quality, whereas astcenc can at least fall back on its
+built-in slower search presets. We have found no image in our (admittedly
+small) test set where ISPC tex comp beats astcenc `-medium` mode for image
+quality.
 
 It's also worth remembering that the current ISPC-ASTC compressor only
 implements a subset of the standard:
@@ -189,9 +269,11 @@ implements a subset of the standard:
 * Only supports a subset of 2D block sizes
 * Only supports PSNR; no perceptual error metrics
 
-For astcenc 2.x development, this seems to indicate that in the ideal world we
-really want another 3x performance improvement without any further quality
-loss. This would allow us to make `-fast` a little faster to close the gap with
-ISPC-ASTC, while also giving some additional search headroom to bring up the
-quality for the larger block sizes. While this is a big increase, it doesn't
-seem beyond the realms of possibility.
+For astcenc 2.x development, if we want to be a clear replacement for ISPC
+texcomp without any real downside, we really need another 3x performance
+improvement without any further quality loss. This would allow us to make
+astcenc `-fast` a little faster to close the gap with ISPC-ASTC, while also
+giving some additional search headroom to bring up the quality for the larger
+photographic color data block sizes.
+
+While this is a big increase, it doesn't seem beyond the realms of possibility.
