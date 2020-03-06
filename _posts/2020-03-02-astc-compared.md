@@ -259,7 +259,7 @@ In cases where quality issues such as block artifacts are observed, astcenc
 `-fast` often has a similar problem. However ISPC texcomp has no route
 available to higher quality, whereas astcenc can at least fall back on its
 built-in slower search presets. We have found no image in our (admittedly
-small) test set where ISPC tex comp beats astcenc `-medium` mode for image
+small) test set where ISPC texcomp beats astcenc `-medium` mode for image
 quality.
 
 It's also worth remembering that the current ISPC-ASTC compressor only
