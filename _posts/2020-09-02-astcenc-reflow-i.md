@@ -304,11 +304,3 @@ Similarly an 8-bit or 16-bit integer compressor data path might be worth
 looking at, as it gives a step increase in vector width, although the SSE
 instruction set is much richer for floats than other data types so expect that
 is non-trivial.
-
-Plan for RDO
-------------
-
-The coding flexibility in ASTC makes things like RDO harder - coding "symbols"
-are relatively fluid in terms of both size and bit position in a block.
-However, it seems like a good fit for mobile in terms of download and install
-sizes so we should start thinking about it.
