@@ -5,7 +5,8 @@ layout: post
 
 As part of the restructuring code review, it's been useful to have a compact
 pseudocode summary of the existing astcenc compressor for reference. This
-post is a napshot of that, but gives a feel for how the codec works today:
+post is a snapshot of that, without much explanation, but gives a feel for how
+the codec works today:
 
 ```
 def find_best_partitionings(partition_count):
