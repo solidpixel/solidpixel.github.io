@@ -23,7 +23,7 @@ Due to the dynamic precision of floating-point numbers, the accuracy of the
 number represented by a sequence of processing operations depends on the values
 of the numbers involved. Changing the order of operations changes the value of
 the intermediate numbers, which changes the precision, which can change the
-accumulator error, which can change the final result.
+accumulated error, which can ultimately change the final result.
 
 This sensitivity to ordering is the reason why IEEE 754 is so fussy about
 the associativity of operations, and strict adherence to the specification
