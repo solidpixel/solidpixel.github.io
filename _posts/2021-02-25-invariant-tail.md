@@ -210,9 +210,10 @@ There are a few possible fixes here, but most have downsides.
 The quickest, but least acceptable in terms of impact, is just to round down
 all of the vector loops based on the largest vector size that can be supported.
 This guarantees that all build variants run the loop tail the same number of
-times. However, it also means you get less benefit from vectorization for the
-smaller widths, as you will fall back to loop tails more often (e.g. in the
-example above SSE would only be allowed vectorize the first 8 elements).
+times, which solves the invariance nicely. However, it also means you get less
+benefit from vectorization for the smaller SIMD widths, as you will fall back
+to loop tails more often (e.g. in the example above SSE would only be allowed
+vectorize the first 8 elements).
 
 The fix I chose for `astcenc` was to make all loop tails accumulate their
 diffs into a `vfloat4` staging variable, and then accumulate this into the
