@@ -246,8 +246,10 @@ for (/* */; i < clipped_texel_count; i++) {
 
 	// Merge full error sums into the vector accumulator as AVX2 may have a
 	// tail longer than 4 items so run though the staging more than once ...
-	haccumulate(error_sumv, staging_error);
-	staging_error = vfloat4::zero();
+	if (staging_index == 3)	{
+		haccumulate(error_sumv, staging_error);
+		staging_error = vfloat4::zero();
+	}
 }
 
 // Merge left-over partial error sums into the vector accumulator
