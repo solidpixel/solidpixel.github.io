@@ -178,8 +178,8 @@ serial vec4 additions into the accumulator for the low and high halves of the
 vector.
 
 In reality this doesn't actually cost us anything. The extra accumulator
-addition is the same cost as the additional halving add we would have used to
-fold the vec8 into a single vec4 partial sum.
+addition is the same cost as the halving add we would have used to fold the
+vec8 into a single vec4 partial sum.
 
 
 Problem three: variable sized loop tails
@@ -192,7 +192,7 @@ here is that we are supporting instruction sets with different vector lengths.
 If we have a loop of 13 items, SSE would vectorize 12 and loop tail the last 1,
 whereas AVX2 can only vectorize 8 and loop tail the last 5.
 
-Up till this point our loop tail is still just scalar code, which means that
+Up to this point our loop tail is still just scalar code, which means that
 this causes us another invariance problem. The 4-wide code does:
 
 ```c
