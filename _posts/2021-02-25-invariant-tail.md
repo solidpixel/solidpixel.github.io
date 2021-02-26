@@ -14,6 +14,11 @@ even though it has a slight performance hit, because it just makes life easier
 for downstream developers. This week threw up an interesting set of case
 studies for where invariance can go wrong ...
 
+Before I go off a ramble about floating-point maths, the important learning
+point of this blog is that by the end of it you'll know how to write an
+invariant vector-length independent accumulator implementation, and some of
+the common pitfalls that occur along the way ...
+
 
 Floating-point is evil
 ======================
