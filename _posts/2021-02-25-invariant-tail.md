@@ -28,13 +28,13 @@ accumulated error, which can ultimately change the final result.
 This sensitivity to ordering is the reason why IEEE 754 is so fussy about
 the associativity of operations, and strict adherence to the specification
 prevents many compiler optimizations that involve reassociation. When we write
-this in  code:
+this in code:
 
 ```c
 float result = a + b + c + d;
 ```
 
-... the compiler in strict mode must process as:
+... the compiler in strict mode must process it as:
 
 ```c
 float result = (((a + b) + c) + d);
@@ -47,7 +47,7 @@ improve performance. Writing the code as:
 float result = (a + b) + (c + d);
 ```
 
-... allows an CPU implementation to issue the two partial sums in parallel,
+... allows a CPU implementation to issue the two partial sums in parallel,
 whereas the original code requires the three additions to be run serially.
 
 
