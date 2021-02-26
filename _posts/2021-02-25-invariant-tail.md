@@ -260,4 +260,7 @@ float error_sum = horizontal_sum(error_sumv);
 ```
 
 ... and with that you have an invariant vectorizable accumulator, that can
-cope with variable length vector instruction sets!
+cope with variable length vector instruction sets! In practice invariance isn't
+really that hard, but there are some gotchas like this that you have to watch
+out for, because the obvious way to use SIMD often causes the problems you need
+to avoid!
