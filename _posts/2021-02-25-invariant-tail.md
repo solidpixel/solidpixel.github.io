@@ -383,6 +383,9 @@ best_indexv = hmin(best_indexv);
 int best_index = best_indexv.lane<0>();
 ```
 
+This is a fun case of invariance issues that are not related to floating-point
+code; you'd have this problem with integer trackers too.
+
 Updates
 =======
 
