@@ -97,7 +97,7 @@ for (i = 0; i < clipped_texel_count; i += SIMD_WIDTH) {
 }
 
 // Process loop tail
-float error_sum = horizontal_sum(error_sumv)l
+float error_sum = horizontal_sum(error_sumv);
 for (/* */; i < texel_count; i++) {
 	float diff = original[i] - encoding[i];
 	error_sum += diff * diff;
