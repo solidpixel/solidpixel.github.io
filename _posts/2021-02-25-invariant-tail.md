@@ -357,7 +357,7 @@ for (int i = 0; i < max_index; i += SIMD_WIDTH)
 	vfloat error = compute_error();
 
 	// Select lanes where the new error is better than lane's current value
-	vmask error_select = error < best_errorv;
+	vmask mask = error < best_errorv;
 
 	// Merge error and index for these lanes into the tracker
 	best_errorv = select(best_errorv, error, mask);
@@ -376,7 +376,7 @@ for (int i = 0; i < max_index; i += SIMD_WIDTH)
 vmask lane_mask = best_errorv == hmin(best_errorv);
 
 // Set all other lanes to max int so they play no part in the match
-best_index = select(vint(MAX_INT), best_indexv, lane_max);
+best_index = select(vint(MAX_INT), best_indexv, lane_mask);
 
 // Find the minimum index of the remaining values
 best_indexv = hmin(best_indexv);
