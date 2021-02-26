@@ -130,7 +130,7 @@ vfloat4 error_sumv { (0 + 4), (1 + 5), (2 + 6), (3 + 7) };
 
 ... which we then horizontal sum before starting the scalar loop tail. SIMD
 horizontal summation will be a halving reduction in all SIMD implementations,
-where recursively add folded vectors until only a scalar value remains.
+which will recursively add folded vectors until only a scalar value remains.
 
 ```c
 float error_sum = ((0 + 4) + (2 + 6)) + ((1 + 5) + (3 + 7));
@@ -142,19 +142,19 @@ float error_sum = ((0 + 4) + (2 + 6)) + ((1 + 5) + (3 + 7));
 float error_sum = (((0 + 4) + (2 + 6)) + ((1 + 5) + (3 + 7)) + 8) + 9;
 ```
 
-In terms of associativity, despite looking similar in the code, it's really
-not very similar at all!
+In terms of associativity, despite looking similar in the source code, it's
+really not very similar at all!
 
 Actually making scalar code and vector code behave the same with reassociation
 is very difficult. A purely scalar implementation cannot match this in-vector
-partial summation behavior, as it just doesn't have the data. Unpacking a
-vector so that horizontal operations are done in linear order to match the
-scalar behavior throws away the performance benefits we wanted to gain by using
-SIMD in the first place. Neither particularly useful ...
+partial summation behavior, as it just doesn't have the data at the same time
+to do the reordering. Unpacking a vector so that horizontal operations are done
+in linear order to match the scalar behavior throws away the performance
+benefits we wanted to gain by using SIMD in the first place.
 
 To solve this problem for `astcenc` we decided to change our reference no-SIMD
 implementation to use 4-wide vectors, and reordered the internal scalar
-implementation of the operations such as dot products and horizontal adds to
+implementation of the horizontal operations such as `dot()` and `hsum()` to
 match the halving reduction pattern that the hardware SIMD instruction sets
 all use. So that's the first problem solved, at the expense of no-SIMD code
 size!
@@ -187,6 +187,12 @@ In reality this doesn't actually cost us anything. The extra accumulator
 addition is the same cost as the halving add we would have used to fold the
 vec8 into a single vec4 partial sum.
 
+**Note:** It's worth noting that this approach is actually the wrong thing to
+do if your aim is to minimize floating point error. The AVX2 implementation
+here would give statistically lower error, as we are combining two smaller
+numbers before combining into a larger one, which gives some scope for small
+errors to cancel out. We can't have both unfortunately, so we chose invariance.
+
 
 Problem three: variable sized loop tails
 ========================================
@@ -218,13 +224,13 @@ all of the vector loops based on the largest vector size that can be supported.
 This guarantees that all build variants run the loop tail the same number of
 times, which solves the invariance nicely. However, it also means you get less
 benefit from vectorization for the smaller SIMD widths, as you will fall back
-to loop tails more often (e.g. in the example above SSE would only be allowed
-vectorize the first 8 elements).
+to loop tails more often. In the example above SSE would only be allowed
+vectorize the first 8 elements.
 
 The fix I chose for `astcenc` was to make all loop tails accumulate their
 diffs into a `vfloat4` staging variable, and then accumulate this into the
-running sum when it gets full. The loop tail therefore behaves exactly like an
-extension of the vector path, for a little added management overhead.
+vector accumulator when it gets full. The loop tail therefore behaves exactly
+like an extension of the vector path, for a little added management overhead.
 
 The code ends up looking like this:
 
@@ -258,7 +264,7 @@ for (/* */; i < texel_count; i++) {
 	}
 }
 
-// Merge left-over partial error sums into the vector accumulator
+// Merge left-over partial error sums from the tail into the vector accumulator
 haccumulate(error_sumv, staging_error);
 
 // Only scalarize the result at the very end ...
@@ -270,3 +276,116 @@ cope with variable length vector instruction sets! In practice invariance isn't
 really that hard, but there are some gotchas like this that you have to watch
 out for, because the obvious way to use SIMD often causes the problems you need
 to avoid!
+
+Other invariance issues
+=======================
+
+While not related to accumulators, we have hit other invariance issues related
+to SIMD implementations. I'll try to keep this up to date as we hit new issues
+so it becomes a bit of a reference page.
+
+Problem four: Fast approximations
+---------------------------------
+
+Many SIMD instruction sets include operations that give fast approximations of
+other operations, trading speed for accuracy.
+
+A good example here is something that replaces divides (`a / d`) with
+reciprocals (`a * recip(d)`), or divisions by square root (`a / sqrt()`) with
+the faster (`a * rsqrt()`). These approximate instructions have two major
+problems.
+
+The first problem is that they are not actually as fast as they seem. The
+initial approximation may be very fast, but for most algorithms the result is
+too imprecise. One or two Newton-Raphson iterations are usually needed to bring
+the precision up to a useful level, which often eliminates any performance
+gain.
+
+The real killer issue for us, where we care about invariance, is that these
+operations are not precisely specified. The result they given isn't consistent
+across vendors or even CPUs from the same vendor.
+
+Conclusion - don't use, and you probably won't see much performance benefit
+anyway.
+
+Problem five: Fused operations
+------------------------------
+
+Many SIMD instruction sets include fused multiply-accumulate operations, either
+as simple FMA operations or as part of a composite such as a dot product. The
+goal of fusing in these cases is to increase precision - the intermediate
+value that is added into the accumulator sum is only transient inside the
+hardware so can be stored at higher precision than a 32-bit float in a
+register. This is great for floating point error, but bad for invariance as we
+cannot reproduce this consistently across instruction sets, so they also
+end up on the ban list.
+
+Problem six: Stable min/max
+---------------------------
+
+While not related to accumulators, when [@aras_p](https://twitter.com/aras_p)
+contributed the new vector-length-agonistic SIMD last year, we found an issue
+caused by code responsible for finding the index of the smallest value in a
+data set.
+
+In scalar code these loops look something like:
+
+```
+int best_index = -1;
+float best_error = MAX_FLOAT;
+for (int i = 0; i < max_index, i++) {
+	if (error[i] < best_error) {
+		best_index = i;
+		best_error = i;
+	}
+}
+```
+
+In vector code these loops get a bit more interesting to implement, with some
+interesting `select()`-foo needed. For the purposes of this sample I'll ignore
+loop tails, as they are not directly relevant.
+
+```
+vint best_indexv(-1);
+vfloat best_errorv(MAX_FLOAT);
+vint lane_ids = vint::lane_id();
+
+for (int i = 0; i < max_index; i += SIMD_WIDTH)
+{
+	vfloat error = compute_error();
+
+	// Select lanes where the new error is better than lane's current value
+	vmask error_select = error < best_errorv;
+
+	// Merge error and index for these lanes into the tracker
+	best_errorv = select(best_errorv, error, mask);
+	best_indexv = select(best_indexv, lane_ids, mask);
+
+	// Bump the lane index values for next time around
+	lane_ids = lane_ids + vint(SIMD_WIDTH);
+}
+
+// At the end select a single index from the vector BUT if you have multiple
+// lanes with the best error score ensure that you pick the smallest `i` NOT
+// the value of `i` that is in the lowest vector lane (as this will not be
+// invariant with vector width).
+
+// Create a mask for all lanes that have the best error
+vmask lane_mask = best_errorv == hmin(best_errorv);
+
+// Set all other lanes to max int so they play no part in the match
+best_index = select(vint(MAX_INT), best_indexv, lane_max);
+
+// Find the minimum index of the remaining values
+best_indexv = hmin(best_indexv);
+
+// Extract scalar value of the min index
+int best_index = best_indexv.lane<0>();
+```
+
+Updates
+=======
+
+* **26 Feb '21:** Added a note to "Problem two" that the spilt summation
+  accumulator has some side-effects on floating-point accuracy.
+* **26 Feb '21:** Added the "Other invariance issues" section.
