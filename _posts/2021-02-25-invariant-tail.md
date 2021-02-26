@@ -332,7 +332,7 @@ data set.
 
 In scalar code these loops look something like:
 
-```
+```c
 int best_index = -1;
 float best_error = MAX_FLOAT;
 for (int i = 0; i < max_index, i++) {
@@ -347,7 +347,7 @@ In vector code these loops get a bit more interesting to implement, with some
 interesting `select()`-foo needed. For the purposes of this sample I'll ignore
 loop tails, as they are not directly relevant.
 
-```
+```c
 vint best_indexv(-1);
 vfloat best_errorv(MAX_FLOAT);
 vint lane_ids = vint::lane_id();
