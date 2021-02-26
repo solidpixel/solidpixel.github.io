@@ -302,7 +302,7 @@ the precision up to a useful level, which often eliminates any performance
 gain.
 
 The real killer issue for us, where we care about invariance, is that these
-operations are not precisely specified. The result they given isn't consistent
+operations are not precisely specified. The result they give isn't consistent
 across vendors or even CPUs from the same vendor.
 
 Conclusion - don't use, and you probably won't see much performance benefit
@@ -316,15 +316,17 @@ as simple FMA operations or as part of a composite such as a dot product. The
 goal of fusing in these cases is to increase precision - the intermediate
 value that is added into the accumulator sum is only transient inside the
 hardware so can be stored at higher precision than a 32-bit float in a
-register. This is great for floating point error, but bad for invariance as we
-cannot reproduce this consistently across instruction sets, so they also
-end up on the ban list.
+register.
+
+This is great for floating point error, but bad for invariance as we cannot
+reproduce this consistently across instruction sets, so they also end up on the
+ban list.
 
 Problem six: Stable min/max
 ---------------------------
 
 While not related to accumulators, when [@aras_p](https://twitter.com/aras_p)
-contributed the new vector-length-agonistic SIMD last year, we found an issue
+contributed the new vector-length-agonistic SIMD last year, he found an issue
 caused by code responsible for finding the index of the smallest value in a
 data set.
 
