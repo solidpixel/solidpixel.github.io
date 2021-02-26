@@ -93,7 +93,7 @@ for (i = 0; i < clipped_texel_count; i += SIMD_WIDTH) {
 
 // Process loop tail
 float error_sum = horizontal_sum(error_sumv)l
-for (/* */; i < clipped_texel_count; i++) {
+for (/* */; i < texel_count; i++) {
 	float diff = original[i] - encoding[i];
 	error_sum += diff * diff;
 }
@@ -237,7 +237,7 @@ for (i = 0; i < clipped_texel_count; i += SIMD_WIDTH) {
 
 // Process loop tail
 vfloat4 staging_error = vfloat4::zero();
-for (/* */; i < clipped_texel_count; i++) {
+for (/* */; i < texel_count; i++) {
 	float diff = original[i] - encoding[i];
 
 	// Stage error sums in a vfloat4
