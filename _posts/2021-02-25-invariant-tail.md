@@ -146,10 +146,11 @@ In terms of associativity, despite looking similar in the code, it's really
 not very similar at all!
 
 Actually making scalar code and vector code behave the same with reassociation
-is very difficult, because a purely scalar implementations cannot match this
-in-vector partial summation behavior, and unpacking a vector so that horizontal
-operations are done in linear order throws away the performance benefits of
-using SIMD.
+is very difficult. A purely scalar implementation cannot match this in-vector
+partial summation behavior, as it just doesn't have the data. Unpacking a
+vector so that horizontal operations are done in linear order to match the
+scalar behavior throws away the performance benefits we wanted to gain by using
+SIMD in the first place. Neither particularly useful ...
 
 To solve this problem for `astcenc` we decided to change our reference no-SIMD
 implementation to use 4-wide vectors, and reordered the internal scalar
