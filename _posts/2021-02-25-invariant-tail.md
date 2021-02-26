@@ -7,7 +7,7 @@ One of the requirements we have for `astcenc` is ensuring that the output of
 the codec is consistent across instruction sets. Users quite like having the
 choice of SSE4.1 or AVX2 when their machine supports it -- faster compression
 is always good -- but no dev team wants game builds that look different just
-because a different machine was use to build it.
+because a different machine was used to build it.
 
 With the upcoming 2.5 release we've decided to aim for invariance by default,
 even though it has a slight performance hit, because it just makes life easier
