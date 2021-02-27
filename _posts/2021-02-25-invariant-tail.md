@@ -336,9 +336,11 @@ In scalar code these loops look something like:
 int best_index = -1;
 float best_error = MAX_FLOAT;
 for (int i = 0; i < max_index, i++) {
-	if (error[i] < best_error) {
+	float error = compute_error();
+
+	if (error < best_error) {
 		best_index = i;
-		best_error = i;
+		best_error = error;
 	}
 }
 ```
