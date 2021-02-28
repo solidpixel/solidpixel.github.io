@@ -288,7 +288,7 @@ Problem four: Fast approximations
 ---------------------------------
 
 Many SIMD instruction sets include operations that give fast approximations of
-other operations, trading speed for accuracy.
+other operations, trading accuracy for speed.
 
 A good example here is something that replaces divides (`a / d`) with
 reciprocals (`a * recip(d)`), or divisions by square root (`a / sqrt()`) with
@@ -322,8 +322,33 @@ This is great for floating point error, but bad for invariance as we cannot
 reproduce this consistently across instruction sets, so they also end up on the
 ban list.
 
-Problem six: Stable min/max
----------------------------
+Problem five: Standard library functions
+----------------------------------------
+
+A lot of the standard library operations that end up as hardware instructions
+seem pretty consistent across hardware implementations, but the more complex
+composite ones that end up as library functions tend to be more variable. We've
+had issues with Microsoft's standard library for Visual Studio (including for
+their LLVM toolset) giving different results to Linux GCC/LLVM, for example.
+
+This unfortunately means that if you want to have cross-vendor invariance
+you can't really rely on the standard library for anything, and you'll need to
+provide your own implementation of any maths functions.
+
+This has some upsides, as the standard library can be overkill for a lot of
+problems, so you can trade accuracy for speed.
+
+- You can write less precise versions that are "good enough" for your problem.
+- You can write specialized implementations that exploit properties for your
+  input data - e.g. known to be greater than zero, and not a NaN or Infinity.
+- You can write vector versions than compute multiple results in parallel.
+
+... but don't undertake this lightly. Testing math functions for accuracy over
+the range of inputs you might use is critical to ensure your program doesn't
+run off into the weeds ...
+
+Problem seven: Stable min/max
+-----------------------------
 
 While not related to accumulators, when [@aras_p](https://twitter.com/aras_p)
 contributed the new vector-length-agonistic SIMD last year, he found an issue
@@ -396,3 +421,4 @@ Updates
 * **26 Feb '21:** Added a note to "Problem two" that the spilt summation
   accumulator has some side-effects on floating-point accuracy.
 * **26 Feb '21:** Added the "Other invariance issues" section.
+* **28 Feb '21:** Added the standard library topic to "Other issues".
