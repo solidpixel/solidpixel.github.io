@@ -1,5 +1,5 @@
 ---
-title: ASTC compressors compared
+title: ASTC codecs compared
 layout: post
 ---
 

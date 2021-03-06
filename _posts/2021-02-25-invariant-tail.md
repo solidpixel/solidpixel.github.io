@@ -1,5 +1,5 @@
 ---
-title: Invariance and the sting in the tail
+title: Invariant float accumulators
 layout: post
 ---
 
