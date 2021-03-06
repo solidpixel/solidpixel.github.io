@@ -31,9 +31,9 @@ the scale of the performance deficit was clear.
 
 It's true that astcenc 1.7 in `-medium` has measurably better image quality
 than ITC, with image quality increases averaging 1.5 dB, but it's ~20 times
-slower than ITC's slow mode and ~40 times slower than ITC's fast mode. Image
-quality is great and all, but, just like compilation speed, faster compression
-means a more productive development team.
+slower than ITC's slow mode and over 100 times slower than ITC's fast mode.
+Image quality is great and all, but, just like compilation speed, faster
+compression means a more productive development team.
 
 When I took over as maintainer for the astcenc project in mid-2019 the
 challenge I set myself was to deliver as much of the ASTC format image quality
@@ -167,10 +167,10 @@ on it.
 
 ![asctenc 2.5 vs ITC 4x4 blocks]({{ "../../../assets/images/astcispc2/10-2.5-vs-itc-4x4.png" | relative_url }}){:.center-image}
 
-Our `-fast` mode is beter than ISPC's slow mode, averaging ~0.2dB better PSNR
+Our `-fast` mode is better than ITC's slow mode, averaging ~0.2dB better PSNR
 and ~3.5x faster relative performance. It also has a much better lower bound on
 quality, with the worst images beating ITC slow by ~0.8 dB and ITC fast by 1.3
-dB, which are signficant improvements.
+dB, which are significant improvements.
 
 However, it's not a universal win everywhere on quality, some images are worse
 by up to 0.8 dB, even though the average is a net gain.
@@ -228,7 +228,7 @@ developers.
 
 For users who just want performance the ITC fast compression mode is still
 probably the better option for photographic data. It out performs astcenc
-`-fast` and often has better image quality at lower bitrates.
+`-fast` and often has better image quality at lower bit rates.
 
 Beyond the comparison for color data, presented here, other factors to consider
 are that astcenc supports all of the ASTC block sizes and the sRGB and HDR
