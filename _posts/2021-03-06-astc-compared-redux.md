@@ -184,8 +184,8 @@ provide, so let's compare astcenc `-medium` against ITC's slow mode.
 ![asctenc 2.5 vs ITC 4x4 blocks]({{ "../../../assets/images/astcispc2/12-2.5-vs-itc-rel2-4x4.png" | relative_url }}){:.center-image}
 
 We've not quite caught up, but now astcenc `-medium` is now a really plausible
-alternative to ITC's slow search. It is still slower - averaging half the speed
-- but in return you get an average of 1 dB PSNR improvement - which is a
+alternative to ITC's slow search. It is still slower, averaging half the speed,
+but in return you get an average of 1 dB PSNR improvement, which is a
 significant gain. In fact that's enough to offset an increase in block size,
 which could allow a game to reduce install size and GPU memory bandwidth.
 
