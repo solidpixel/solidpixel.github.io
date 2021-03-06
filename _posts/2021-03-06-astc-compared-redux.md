@@ -186,8 +186,8 @@ provide, so let's compare astcenc `-medium` against ITC's slow mode.
 We've not quite caught up, but now astcenc `-medium` is now a really plausible
 alternative to ITC's slow search. It is still slower - averaging half the speed
 - but in return you get an average of 1 dB PSNR improvement - which is a
-significant gain. In fact that's enough enough to offset an increase in block
-size, which could allow a game to reduce install size and GPU memory bandwidth.
+significant gain. In fact that's enough to offset an increase in block size,
+which could allow a game to reduce install size and GPU memory bandwidth.
 
 6x6 blocks
 ----------
@@ -201,13 +201,17 @@ comes off worse on quality.
 Nearly all of the images using `-fast` are worse image quality than ITC's slow
 profile, with an average loss of 0.45 dB, and a peak loss of 1.1 dB. These are
 quite large deficits, so for this one ITC would remain the better choice,
-despite the speed advantage of astcenc.
+despite the speed advantage of astcenc. (It's worth noting that you could try
+to use the new tunable quality parameter for astcenc to try and dial the
+quality back up, for some lost performance. You're no longer bound by the fixed
+presets).
 
 ![asctenc 2.5 vs ITC 6x6 blocks]({{ "../../../assets/images/astcispc2/14-2.5-vs-itc-rel-6x6.png" | relative_url }}){:.center-image}
 
 The good news is that the comparison with astcenc `-medium` remains true, and
 we can see that for a similar slowdown (just under half the speed), you get
-an average improvement of 0.5 dB.
+an average improvement of 0.5 dB. Not as large as before, but still a very
+visible improvement that's worth aiming for.
 
 ![asctenc 2.5 vs ITC 6x6 blocks]({{ "../../../assets/images/astcispc2/15-2.5-vs-itc-rel2-6x6.png" | relative_url }}){:.center-image}
 
