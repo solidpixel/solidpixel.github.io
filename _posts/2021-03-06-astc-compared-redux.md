@@ -95,7 +95,7 @@ zoomed chart below gives a bit more detail:
 
 The nice result here is that we can see that the new codec's `-thorough` is now
 measurably faster than the 1.7's `-medium`, and `-medium` is slightly faster
-than 1.7's fast. We'll come back to this point later in this section.
+than 1.7's `-fast`. We'll come back to this point later in this section.
 
 If we look at the relative change in performance and quality comparing the two
 we can see that there was a lot more performance, but some image quality loss.
@@ -129,25 +129,25 @@ usable in real-world development.
 ----------
 
 The general trends we see for 6x6 blocks are very similar to the 4x4 blocks,
-although the relative speed ups are larger, and the relative slow downs are
+although the relative speed ups are larger, and the relative quality drops are
 larger.
 
 ![asctenc 2.5 vs 1.7 6x6 blocks]({{ "../../../assets/images/astcispc2/05-2.5-vs-1.7-6x6.png" | relative_url }}){:.center-image}
 
 ![asctenc 2.5 vs 1.7 6x6 blocks]({{ "../../../assets/images/astcispc2/06-2.5-vs-1.7-zoom-6x6.png" | relative_url }}){:.center-image}
 
-For the most heavily used modes we see larger relative speedups than we saw
-with the 4x4 blocks, but we also see larger PSNR losses. The losses for
-`-thorough`, `-medium`, all approximately double to an average of 0.1dB and
-0.2dB respectively.
+For the most heavily used modes we see speedups of up to 15x, but we also see
+larger PSNR losses. The losses for `-thorough`, `-medium`, all approximately
+double to an average of 0.1dB and 0.2dB respectively.
 
 ![asctenc 2.5 vs 1.7 4x4 blocks]({{ "../../../assets/images/astcispc2/07-2.5-vs-1.7-rel-6x6.png" | relative_url }}){:.center-image}
 
 Here you can also see the impact of a policy to make `-fastest` as fast as
-possible. This mode is designed to give the fastest possible absolute
-performance, suitable for rapid prototyping and content roughing out, and was
-not trying to preserve image quality compared to the 1.7 series. We therefore
-see some significant quality drop off here.
+possible. This mode is deliberately designed to give the fastest possible
+absolute performance, suitable for rapid prototyping and content roughing out,
+and was not trying to preserve image quality compared to the 1.7 series. We
+therefore see some significant quality drop off here.
+
 
 astcenc 2.5 vs ISPC TexComp
 ===========================
