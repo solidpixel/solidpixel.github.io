@@ -70,6 +70,13 @@ For ISPC TexComp the fast scores are from the `astc_fast` profile, which only
 supports RGB data. The slow scores are from the `astc_alpha_slow` profile,
 which supports RGBA but which also gives better image quality for RGB data.
 
+**Note:** I normally develop on WSL using clang++, but I used Visual Studio
+2019 for all the builds because I couldn't get correct output from ISPC
+TexComp when building for Linux. I used the VS LLVM toolset for the builds,
+although I doubt it makes much difference to ISPC TexComp, as the core of the
+codec is built by the ISPC compiler.
+
+
 astcenc 2.5 vs astcenc 1.7
 ==========================
 
@@ -267,9 +274,11 @@ My high level goals (not binding ;P) for the next phase of work are:
   that end up searching through 3 and 4 partition encodings.
 * Keep making `-medium` faster, without losing any more image quality. I'd like
   astcenc `-medium` to be as fast as ITC's slow search, so it becomes an
-  obvious drop-in alternative with no downsides.
+  obvious drop-in alternative with no downsides. Finding another 2x will be
+  tricky ...
 * Keep the `-fast` performance about where it is, but try to improve the
-  quality of the worst block encodings so it is more viable as an alternative to
-  the ITC's fast search.
+  quality of the worst block encodings so it is more viable as an alternative
+  to the ITC's fast search. Don't have any good ideas here yet, but we'll
+  see ...
 
 If you have any ideas, please feel free to get in touch on GitHub ...
