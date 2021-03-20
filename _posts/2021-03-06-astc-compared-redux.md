@@ -9,6 +9,11 @@ bug fixes. Now that the release is stable and in beta, this felt like a good
 time to pull together some benchmark data and look at the progress thus far.
 
 
+**UPDATED:** This blog was refreshed with the final status of the 2.5 release,
+which measurably improved the image quality of the `-fast` and `-fastest` modes
+for a ~15% performance hit.
+
+
 In the beginning ...
 ====================
 
@@ -112,11 +117,15 @@ improvement vs processing cost.
 
 ![asctenc 2.5 vs 1.7 4x4 blocks]({{ "../../../assets/images/astcispc2/02-2.5-vs-1.7-rel-4x4.png" | relative_url }}){:.center-image}
 
-The typical speedup we see on these images is between 9 and 12 x, and an
+The typical speedup we see on these images is between 8.5x and 11.5x, and an
 average image quality loss is just 0.05dB for `-thorough` and 0.1dB for
-`-medium`. The `-fast` and `-fastest` modes deliberately sacrificed a little
-more image quality to gain more performance, so the average PSNR loss there is
-a little higher around 0.175 dB.
+`-medium` and `-fast`. The `-fastest` mode sees considerable improvement in
+quality compared to 1.7 because we'd made it so much faster in the 2.5 beta
+that I actually decided to "spend" a bit of that performance to get above an
+obvious knee in the cost-quality curve. A little more compression effort gave
+up to 2 dB improvements in some images compared to 2.5 beta, which seemed well
+worth a small increase in compression cost (and despite that 2.5 is still a lot
+faster than 2.4).
 
 The speed ups here are so significant that many of the quality thresholds are
 now faster than the next lower quality preset in the 1.x series. This gives the
@@ -147,13 +156,11 @@ For the most heavily used modes we see speedups of up to 15x, but we also see
 larger PSNR losses. The losses for `-thorough`, `-medium`, all approximately
 double to an average of 0.1dB and 0.2dB respectively.
 
-![asctenc 2.5 vs 1.7 4x4 blocks]({{ "../../../assets/images/astcispc2/07-2.5-vs-1.7-rel-6x6.png" | relative_url }}){:.center-image}
+![asctenc 2.5 vs 1.7 6x6 blocks]({{ "../../../assets/images/astcispc2/07-2.5-vs-1.7-rel-6x6.png" | relative_url }}){:.center-image}
 
-Here you can also see the impact of a policy to make `-fastest` as fast as
-possible. This mode is deliberately designed to give the fastest possible
-absolute performance, suitable for rapid prototyping and content roughing out,
-and was not trying to preserve image quality compared to the 1.7 series. We
-therefore see some significant quality drop off here.
+Here you can also see the impact of the rebalancing of the `-fastest` mode,
+seeing the a significant increase in quality compared to 1.7 despite the faster
+performance.
 
 
 astcenc 2.5 vs ISPC TexComp
@@ -168,19 +175,20 @@ Well, pretty close.
 ----------
 
 For 4x4 blocks our `-fast` splits the two ITC profiles. Our `-fastest` mode
-beats ITC's fastest mode, but given it's low image quality I discount it from
-further consideration here as I wouldn't expect anyone to ship content based
-on it.
+is similar to ITC's fastest mode, but given it's low image quality I discount
+it from further consideration here as I wouldn't expect anyone to ship content
+based on it.
 
 ![asctenc 2.5 vs ITC 4x4 blocks]({{ "../../../assets/images/astcispc2/10-2.5-vs-itc-4x4.png" | relative_url }}){:.center-image}
 
-Our `-fast` mode is better than ITC's slow mode, averaging ~0.2dB better PSNR
-and ~3.5x faster relative performance. It also has a much better lower bound on
+Our `-fast` mode is better than ITC's slow mode, averaging ~0.5dB better PSNR
+and ~3x faster relative performance. It also has a much better lower bound on
 quality, with the worst images beating ITC slow by ~0.8 dB and ITC fast by 1.3
 dB, which are significant improvements.
 
 However, it's not a universal win everywhere on quality, some images are worse
-by up to 0.8 dB, even though the average is a net gain.
+by up to 0.6 dB, even though the average is still a significant "win" for
+astcenc.
 
 ![asctenc 2.5 vs ITC 4x4 blocks]({{ "../../../assets/images/astcispc2/11-2.5-vs-itc-rel-4x4.png" | relative_url }}){:.center-image}
 
@@ -205,8 +213,8 @@ comes off worse on quality.
 
 ![asctenc 2.5 vs ITC 6x6 blocks]({{ "../../../assets/images/astcispc2/13-2.5-vs-itc-6x6.png" | relative_url }}){:.center-image}
 
-Nearly all of the images using `-fast` are worse image quality than ITC's slow
-profile, with an average loss of 0.45 dB, and a peak loss of 1.1 dB. These are
+Many of the images using `-fast` are worse image quality than ITC's slow
+profile, with an average loss of 0.3 dB, and a peak loss of 0..9 dB. These are
 quite large deficits, so for this one ITC would remain the better choice,
 despite the speed advantage of astcenc. (It's worth noting that you could try
 to use the new tunable quality parameter for astcenc to try and dial the
