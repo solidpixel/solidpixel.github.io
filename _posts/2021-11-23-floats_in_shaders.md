@@ -40,8 +40,8 @@ representable normal number is 65504.0. So far, so good.
 The fractional part is scaled by the exponent, so we can intuit that as the
 exponent gets larger our fractional increments are spaced further apart. For
 the smallest normal numbers the interval between sequential numbers is
-2<sup>-24</sup>. For the largest normal numbers the interval between numbers is
-32. Large numbers are significantly less precise than small numbers. OK,
+2<sup>-24</sup>. For the largest normal numbers the interval between numbers
+is 32. Large numbers are significantly less precise than small numbers. OK,
 getting more evil.
 
 There are a variety of corner cases that can be encoded. The two most
@@ -138,10 +138,10 @@ large that there are no "steps" in the active range of `cos()` function so the
 UI widget stops moving all together.
 
 When dealing with rotations and angles remember that `sin()` and `cos()` are
-periodic functions that repeat. Values in the range `[0 and 2PI)` are
+periodic functions that repeat. Values in the range `[0 and 2π)` are
 interesting, values above that bring nothing new. In this case we modified
 the application to compute the rotation on the CPU, wrapping the value whenever
-it exceeded 2PI to preserve the precision, and uploaded the wrapped value to
+it exceeded 2π to preserve the precision, and uploaded the wrapped value to
 the shader as a uniform. A quick fix, and no more skipping animations!
 
 **Footnote:** It's worth noting that while this application seemed to work using
@@ -160,7 +160,7 @@ range! To get the best quality ensure you actually use both positive and
 negative values.
 
 For our example above using `cos()`, the best solution to preserve the most
-precision is actually to wrap inputs into the `[-PI, +PI)` range.
+precision is actually to wrap inputs into the `[-π, +π)` range.
 
 #4: Locate data origin with care
 --------------------------------
