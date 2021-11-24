@@ -1,0 +1,198 @@
+---
+title: Floating-point in mobile shaders
+layout: post
+---
+
+Computer floating-point maths is the evil twin of sensible real-world maths. It
+provides great flexibility, being capable of high precision and high dynamic
+range (although not both simultaneously), but comes with some nasty boundary
+conditions that can cause major issues with algorithmic stability.
+
+To make life more interesting, for mobile graphics development it is
+recommended to make as much use of narrower data types as possible. The
+`mediump` (OpenGL ES) and `RelaxedPrecision` (SPIR-V\Vulkan) float types
+commonly map on to fp16 "half-float" numbers. Using narrower types from memory
+reduces bandwidth, and shader arithmetic on narrower types reduces energy
+demand and also often increases performance. The downside is that those nasty
+floating-point boundary conditions can be reached a lot more easily ...
+
+This blog will provide some handy tips and tricks to ensure you get the best
+out of the fp16 format, and hopefully avoid needing to swap to battery-sucking
+`highp` fp32 operations.
+
+
+Taxonomy of a half-float
+========================
+
+A fp16 number consists of three components:
+
+* 1 sign bit
+* 5 exponent bits, stored with a bias of +15
+* 11 fraction bits, stored as 10 bits with an implicit initial "1" bit
+
+Normal values are reconstructed as:
+
+* (−1)^sign × 2^(exponent−15) × 1.fraction
+
+The smallest representable normal number above zero is ~0.00006104. The largest
+representable normal number is 65504.0. So far, so good.
+
+The fractional part is scaled by the exponent, so we can intuit that as the
+exponent gets larger our fractional increments are spaced further apart. For
+the smallest normal numbers the interval between sequential numbers is 2^-24.
+For the largest normal numbers the interval between numbers is 32. Large
+numbers are significantly less precise than small numbers. OK, getting more
+evil.
+
+There are a variety of corner cases that can be encoded. The two most
+interesting ones are Infinity values, for computations which exceed 65504.0,
+and Not-a-Number (NaN) values, which represent some form of "the maths broke"
+error condition. These two are the main reason for floating-point maths being
+"evil", because once you have an Infinity or a NaN in a computation chain they
+are sticky will tend to propagate through it. The graphics APIs give a lot of
+flex here to vendor implementations, so YMMV in terms of whether your shader
+can actually generate Infinities or NaNs on any given platform. It you want to
+ensure stable and portable code you *really* want to ensure your arithmetic
+avoids getting into a situation where this matters ...
+
+Half-float on Mali GPUs
+-----------------------
+
+For Arm Mali GPUs using fp16 data types has multiple advantages over fp32.
+
+- Half-float vertex attributes require half the memory bandwidth to load.
+- Two half-float variables can be packed into a 32-bit register, so you can
+  run more complex shaders without reducing core thread occupancy.
+- Two half-float variables can be processed per clock for most common
+  arithmetic operations, so your shader maths can go up to twice as fast.
+- Toggling half the number of transistors per operation saves a *lot* of
+  energy. Good for battery life and device thermals.
+
+... so you really do want to use them as much as possible.
+
+Tips and tricks
+===============
+
+There are two common reasons I hear for developers not using fp16 more:
+
+* Magnitude isn't large enough (i.e. hit infinity or max value).
+* Precision isn't accurate enough (i.e. quality is impaired by quantization.)
+
+... so here are some tricks that can help.
+
+#1: Keep numbers small
+----------------------
+
+The first bit of advice is to order computations to keep numbers as small as
+possible. For example, computing the average of N values could be done as:
+
+```
+sum = 0.0
+scale = 1.0 / len(list)
+
+foreach value in list:
+    sum += value
+
+average = sum * scale
+```
+
+... but this could easily exceed the maximum value of an fp16 type if the
+individual values are large or if the list is long. Alternatively, this could
+be defined as:
+
+```
+average = 0.0
+scale = 1.0 / len(list)
+
+foreach value in list:
+    average += value * scale
+```
+
+This requires a multiply in the loop, but GPUs are designed for fast FMA
+throughput so this is unlikely to be slower in practice. If this style of
+change is the difference that allows you to use fp16 rather than fp32 then it
+is definitely a change worth making.
+
+#2: Wrap periodic numbers
+-------------------------
+
+One of the first support cases I handled for Mali was an application with a
+user interface element that rotated over time. It worked for a while, but after
+a few minutes the rotation became jumpy and then eventually just completely
+stopped rotating. The shader was doing something like this:
+
+```
+animation_step = time * angle_increment_per_time
+location = cos(animation_step);
+\\ Do something with location here
+```
+
+... where `time` was just an incrementing number of seconds since the
+application started. So what went wrong?
+
+This design means that the value of `animation_step` gets larger and larger
+over time. The jumpy animation was caused by the magnitude of the number
+increasing to the point where the precision reduced to just a few "steps" in
+the active range of the `cos()` function, and eventually the magnitude gets so
+large that there are no "steps" in the active range of `cos()` function so the
+UI widget stops moving all together.
+
+When dealing with rotations and angles remember that `sin()` and `cos()` are
+periodic functions that repeat. Values in the range `[0 and 2PI)` are
+interesting, values above that bring nothing new. In this case we modified
+the application to compute the rotation on the CPU, wrapping the value whenever
+it exceeded 2PI to preserve the precision, and uploaded the wrapped value to
+the shader as a uniform. A quick fix, and no more skipping animations!
+
+**Footnote:** It's worth noting that while this application seemed to work using
+a `highp` variable, even that would have hit a problems after a few weeks of
+uptime. This sounds odd for games, but it is not uncommon to see that level of
+uptime in system user interfaces for phones or embedded applications. Designs
+reliant on ever-incrementing floating point values should always be viewed with
+suspicion.
+
+#3: Exploit the sign bit
+------------------------
+
+Floating-point values are always stored with a sign bit, so if you only store
+positive numbers you're effectively wasting half of your available dynamic
+range! To get the best quality ensure you actually use both positive and
+negative values.
+
+For our example above using `cos()`, the best solution to preserve the most
+precision is actually to wrap inputs into the `[-PI, +PI)` range.
+
+#4: Locate data origin with care
+--------------------------------
+
+Floating-point numbers are most precise around zero, so locate the data origin
+in your data set where you need the most accuracy. We often see developers
+using fp32 for object-space positions, but it is possible to use fp16 to encode
+positions for most objects if you locate the origin with care.
+
+For example, character meshes tend to need the detail in the face. Locate the
+origin in the middle of the head to ensure that the face and ears can be
+represented accurately, not under the character's feet.
+
+#5: Shader precision can differ from memory precision
+-----------------------------------------------------
+
+Finally, for cases where you really do need fp32 computation, remember that
+shader precision doesn't need to be the same as in-memory precision.
+
+Computing world-space positions generally does need fp32 calculations in the
+vertex shader, so you want to bind the input vertex attribute for position to a
+`highp` variable in the shader program. However, the data precision for the
+object-space coordinate in memory can still be a narrow type (fp16, or even
+unorm16 if you prefer equally spaced data points) and converted on load. This
+means that you at least save memory bandwidth, which is one of the most
+expensive things you can do on mobile.
+
+Summary
+=======
+
+Using fp16 can be a challenge, but the efficiency gains it can give on mobile
+platforms is a real benefit worth fighting for.
+
+I've given some tips and tricks here for getting the most out of a fp16 data
+set. Let me know if you have any more!
