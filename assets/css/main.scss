@@ -113,7 +113,7 @@ article, section {
 }
 
 // Remove the code font style which makes a line height inconsistent
-code {
+p code {
 	background: none !important;
 	border: 0 !important;;
 	border-radius: 0 !important;;
@@ -121,5 +121,9 @@ code {
 	padding: 0 !important;
 	padding-top: 0 !important;
 	padding-bottom: 0 !important;
-	font-size: 12pt !important;
+	font-size: 0.9em !important;
+}
+
+p, li {
+	line-height: 1.4em;
 }
