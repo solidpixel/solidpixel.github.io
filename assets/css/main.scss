@@ -1,5 +1,6 @@
 ---
 ---
+
 @import "jekyll-theme-prologue";
 @import "monokai.css";
 
@@ -102,4 +103,23 @@ article blockquote + p {
 
 article ul {
   margin-bottom: 1em;
+}
+
+// General style overrides
+
+// Remove the fuzzy background overlay as it makes reading unpleasant
+article, section {
+	background-image: none !important;
+}
+
+// Remove the code font style which makes a line height inconsistent
+code {
+	background: none !important;
+	border: 0 !important;;
+	border-radius: 0 !important;;
+	border-style: none !important;
+	padding: 0 !important;
+	padding-top: 0 !important;
+	padding-bottom: 0 !important;
+	font-size: 12pt !important;
 }
