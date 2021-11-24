@@ -32,17 +32,17 @@ A fp16 number consists of three components:
 
 Normal values are reconstructed as:
 
-* (−1)^sign × 2^(exponent−15) × 1.fraction
+* −1<sup>sign</sup> × 2<sup>(exponent − 15)</sup> × 1.fraction
 
 The smallest representable normal number above zero is ~0.00006104. The largest
 representable normal number is 65504.0. So far, so good.
 
 The fractional part is scaled by the exponent, so we can intuit that as the
 exponent gets larger our fractional increments are spaced further apart. For
-the smallest normal numbers the interval between sequential numbers is 2^-24.
-For the largest normal numbers the interval between numbers is 32. Large
-numbers are significantly less precise than small numbers. OK, getting more
-evil.
+the smallest normal numbers the interval between sequential numbers is
+2<sup>-24</sup>. For the largest normal numbers the interval between numbers is
+32. Large numbers are significantly less precise than small numbers. OK,
+getting more evil.
 
 There are a variety of corner cases that can be encoded. The two most
 interesting ones are Infinity values, for computations which exceed 65504.0,
