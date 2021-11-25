@@ -4,13 +4,16 @@
 @import "jekyll-theme-prologue";
 @import "monokai.css";
 
+@import url('https://fonts.googleapis.com/css2?family=Open+Sans:wdth,wght@95,325&display=swap');
+
 // Headings
 body {
-	font-family: 'Source Sans Pro', sans-serif;
-	font-weight: 300;
+	font-family: 'Open Sans', sans-serif;
+	font-weight: 325;
 }
 
 article.shade-two {
+	background-color: #f0f5f5 !important;
 	padding-top: 23px !important;
 }
 
