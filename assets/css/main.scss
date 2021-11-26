@@ -10,11 +10,11 @@
 body {
 	font-family: 'Open Sans', sans-serif;
 	font-weight: 325;
-	color: #707070;
+	color: #686868;
 }
 
 article.shade-two {
-	background-color: #f0f5f5 !important;
+	background-color: #eaf0f0 !important;
 	padding-top: 23px !important;
 }
 
@@ -68,6 +68,11 @@ code {
 	font-size: 11pt;
 	padding-top: 5pt !important;
 	padding-bottom: 5pt !important;
+}
+
+// Code boxes
+pre code {
+	color: #a0a0a0;
 }
 
 // Navigation style overrides

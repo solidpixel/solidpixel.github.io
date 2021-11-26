@@ -35,7 +35,7 @@ Normal values are reconstructed as:
 * −1<sup>sign</sup> × 2<sup>(exponent − 15)</sup> × 1.fraction
 
 The smallest representable normal number above zero is ~0.00006104. The largest
-representable normal number is 65504.0. So far, so good.
+representable normal number is 65504.0.
 
 The fractional part is scaled by the exponent, so we can intuit that as the
 exponent gets larger our fractional increments are spaced further apart. For
@@ -62,7 +62,9 @@ For Arm Mali GPUs using fp16 data types has multiple advantages over fp32.
 
 - Half-float vertex attributes require half the memory bandwidth to load.
 - Two half-float variables can be packed into a 32-bit register, so you can
-  run more complex shaders without reducing core thread occupancy.
+  run more complex shaders without reducing core thread occupancy or incurring
+  stack spills. Stack spilling is particularly expensive, and reducing
+  precision is one of the quickest ways to reduce it.
 - Two half-float variables can be processed per clock for most common
   arithmetic operations, so your shader maths can go up to twice as fast.
 - Toggling half the number of transistors per operation saves a *lot* of
@@ -80,7 +82,29 @@ There are two common reasons I hear for developers not using fp16 more:
 
 ... so here are some tricks that can help.
 
-#1: Keep numbers small
+#1: Be the compiler
+-------------------
+
+The variable precision of floating point means that, unlike real-world maths,
+the result of a computation depends on the order of the computations. Due to
+rounding and quantization effects it is entirely possible to have a computation
+where "(A + B) - C" does not equal "A + (B - C)". I cover this problem in
+more detail in my earlier blog on [writing invariant accumulators][PH1].
+
+This property of floating-point computation really limits the ability of
+compilers to reorder logic in expressions - perfectly sensible real-world
+reorderings can introduce Infinities and NaN results. Technically the graphics
+specifications allow shader compilers a lot of latitude to reorder - we're
+definitely not strict-mode IEEE754 - BUT whenever compilers get too aggressive
+we start to see issues with Infinities and NaNs causing rendering artifacts.
+So, in reality shader compilers are actually pretty conservative.
+
+In my experience developers writing shaders consistently over-estimate how much
+of their verbose code a compiler will optimize. If in doubt assume the compiler
+isn't going to clean up the mess, and ensure the source code is as lean as
+possible.
+
+#2: Keep numbers small
 ----------------------
 
 The first bit of advice is to order computations to keep numbers as small as
@@ -113,7 +137,7 @@ throughput so this is unlikely to be slower in practice. If this style of
 change is the difference that allows you to use fp16 rather than fp32 then it
 is definitely a change worth making.
 
-#2: Wrap periodic numbers
+#3: Wrap periodic numbers
 -------------------------
 
 One of the first support cases I handled for Mali was an application with a
@@ -145,24 +169,24 @@ it exceeded 2π to preserve the precision, and uploaded the wrapped value to
 the shader as a uniform. A quick fix, and no more skipping animations!
 
 **Footnote:** It's worth noting that while this application seemed to work using
-a `highp` variable, even that would have hit a problems after a few weeks of
+a `highp` variable, even that would have hit problems after a few weeks of
 uptime. This sounds odd for games, but it is not uncommon to see that level of
 uptime in system user interfaces for phones or embedded applications. Designs
 reliant on ever-incrementing floating point values should always be viewed with
 suspicion.
 
-#3: Exploit the sign bit
+#4: Exploit the sign bit
 ------------------------
 
-Floating-point values are always stored with a sign bit, so if you only store
-positive numbers you're effectively wasting half of your available dynamic
-range! To get the best quality ensure you actually use both positive and
-negative values.
+Normal floating-point values are always stored with a sign bit, so if you only
+store positive numbers you're effectively wasting half of your available
+dynamic range! To get the best quality ensure you actually use both positive
+and negative values.
 
 For our example above using `cos()`, the best solution to preserve the most
 precision is actually to wrap inputs into the `[-π, +π)` range.
 
-#4: Locate data origin with care
+#5: Locate data origin with care
 --------------------------------
 
 Floating-point numbers are most precise around zero, so locate the data origin
@@ -174,7 +198,7 @@ For example, character meshes tend to need the detail in the face. Locate the
 origin in the middle of the head to ensure that the face and ears can be
 represented accurately, not under the character's feet.
 
-#5: Shader precision can differ from memory precision
+#6: Shader precision can differ from memory precision
 -----------------------------------------------------
 
 Finally, for cases where you really do need fp32 computation, remember that
@@ -196,3 +220,24 @@ platforms is a real benefit worth fighting for.
 
 I've given some tips and tricks here for getting the most out of a fp16 data
 set. Let me know if you have any more!
+
+Appendix
+========
+
+Related material
+----------------
+
+* [**@Atrix256** - Demystifying Floating Point Precision][AW1]
+* [**@BartWronsk** - Small float formats – R11G11B10F precision][BW1]
+* [**@thesolidpixel** - Invariant float accumulators][PH1]
+
+[AW1]: https://blog.demofox.org/2017/11/21/floating-point-precision/
+[BW1]: https://bartwronski.com/2017/04/02/small-float-formats-r11g11b10f-precision/
+[PH1]: {% link _posts/2021-02-25-invariant-tail.md %}
+
+Change log
+----------
+
+- **26/11/2021** - Added "Be the compiler" section.
+- **26/11/2021** - Added "Related material" section.
+- **26/11/2021** - Added avoiding stack spills as an advantage.
