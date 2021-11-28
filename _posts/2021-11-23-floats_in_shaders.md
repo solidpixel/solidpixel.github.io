@@ -78,24 +78,24 @@ Tips and tricks
 There are two common reasons I hear for developers not using fp16 more:
 
 * Magnitude isn't large enough (i.e. hit infinity or max value).
-* Precision isn't accurate enough (i.e. quality is impaired by quantization.)
+* Precision isn't accurate enough (i.e. quality is impaired by quantization).
 
 ... so here are some tricks that can help.
 
 #1: Be the compiler
 -------------------
 
-The variable precision of floating point means that, unlike real-world maths,
+The variable precision of floating-point means that, unlike real-world maths,
 the result of a computation depends on the order of the computations. Due to
 rounding and quantization effects it is entirely possible to have a computation
 where "(A + B) - C" does not equal "A + (B - C)". I cover this problem in
 more detail in my earlier blog on [writing invariant accumulators][PH1].
 
 This property of floating-point computation really limits the ability of
-compilers to reorder logic in expressions - perfectly sensible real-world
+compilers to reorder logic in expressions; perfectly sensible real-world
 reorderings can introduce Infinities and NaN results. Technically the graphics
-specifications allow shader compilers a lot of latitude to reorder - we're
-definitely not strict-mode IEEE754 - BUT whenever compilers get too aggressive
+specifications allow shader compilers a lot of latitude to reorder — we're
+definitely not strict-mode IEEE754 — BUT whenever compilers get too aggressive
 we start to see issues with Infinities and NaNs causing rendering artifacts.
 So, in reality shader compilers are actually pretty conservative.
 
@@ -157,22 +157,22 @@ application started. So what went wrong?
 This design means that the value of `animation_step` gets larger and larger
 over time. The jumpy animation was caused by the magnitude of the number
 increasing to the point where the precision reduced to just a few "steps" in
-the active range of the `cos()` function, and eventually the magnitude gets so
-large that there are no "steps" in the active range of `cos()` function so the
-UI widget stops moving all together.
+the active range of the `cos()` function. Eventually the magnitude gets so
+large that there are no "steps" in the active range of the `cos()` function so
+the UI widget stops moving all together.
 
 When dealing with rotations and angles remember that `sin()` and `cos()` are
-periodic functions that repeat. Values in the range `[0 and 2π)` are
-interesting, values above that bring nothing new. In this case we modified
-the application to compute the rotation on the CPU, wrapping the value whenever
-it exceeded 2π to preserve the precision, and uploaded the wrapped value to
-the shader as a uniform. A quick fix, and no more skipping animations!
+periodic functions that repeat. Values in the range `[0, 2π)` are interesting,
+interesting, values above that bring nothing new. In this case we modified the
+application to compute the rotation on the CPU, wrapping the value whenever it
+exceeded 2π to preserve the precision, and uploaded the wrapped value to the
+shader as a uniform. A quick fix, and no more skipping animations!
 
 **Footnote:** It's worth noting that while this application seemed to work using
 a `highp` variable, even that would have hit problems after a few weeks of
 uptime. This sounds odd for games, but it is not uncommon to see that level of
 uptime in system user interfaces for phones or embedded applications. Designs
-reliant on ever-incrementing floating point values should always be viewed with
+reliant on ever-incrementing floating-point values should always be viewed with
 suspicion.
 
 #4: Exploit the sign bit
@@ -184,7 +184,9 @@ dynamic range! To get the best quality ensure you actually use both positive
 and negative values.
 
 For our example above using `cos()`, the best solution to preserve the most
-precision is actually to wrap inputs into the `[-π, +π)` range.
+precision is actually to wrap inputs into the `[-π, +π)` range. This has half
+the peak magnitude of `[0, 2π)` so preserves 1 additional bit of precision for
+the largest values.
 
 #5: Locate data origin with care
 --------------------------------
@@ -211,6 +213,36 @@ object-space coordinate in memory can still be a narrow type (fp16, or even
 unorm16 if you prefer equally spaced data points) and converted on load. This
 means that you at least save memory bandwidth, which is one of the most
 expensive things you can do on mobile.
+
+#7: Swizzle inside 32-bit chunks
+--------------------------------
+
+Many mobile GPUs have a 32-bit per-thread data path in their arithmetic units,
+which gives purely scalar fp32 operations and vec2 SIMD fp16 operations. To get
+2x throughput for fp16 you need to ensure that operations fill vec2 SIMD lanes.
+This primarily means that the source must contain vectorizable code, and that
+input and outputs for the two lanes must come from/go to the same 32-bit
+register.
+
+For normal graphics workloads this often "drops out" for free - we operate on
+vector data and tend to have relatively well defined use of maths for
+position, normals, and lighting calculation. However, compute shaders tend to
+do more bespoke algorithms with funky data packing and can run in to problems.
+
+Where possible, design code to operate on vector types or find other ways to
+make it obvious to the compiler that the vectorization opportunity exists.
+While modern IRs are scalar without vector types, there are still ways you can
+hint that data pairing is allowed. For example, loops that operate on a single
+scalar value require compiler to apply loop unrolling to find vectorization.
+Loops that operate on two scalar values and increment by two allow the rolled
+loops to be trivially vectorized.
+
+Beware of operations that regularly cross 32-bit vector chunk boundaries; this
+may span two registers which means either use of scalar f16 operations or
+additional instructions to manually repack a new vector. Note that chunks are
+not necessarily the source `.rg` and `.ba` pairs, because the compiler can
+swizzle and keep things in alternative swizzle orderings, so spotting problem
+cases does require a bit of manual identification.
 
 Summary
 =======
@@ -241,3 +273,4 @@ Change log
 - **26/11/2021** - Added "Be the compiler" section.
 - **26/11/2021** - Added "Related material" section.
 - **26/11/2021** - Added avoiding stack spills as an advantage.
+- **28/11/2021** - Added "Swizzle inside 32-bit chunks" section.
