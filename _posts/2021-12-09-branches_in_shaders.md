@@ -16,8 +16,7 @@ Taxonomy of branch execution
 
 Shader programs are a sequence of instructions that make the GPU "do"
 something. For the purposes of this blog a branch is an instruction that can
-conditionally change the flow of control though that sequence. This is
-ultimately what `if\else`, `for` and `while` loops all turn in to.
+conditionally change the flow of control though that sequence.
 
 So, what makes branches expensive for GPUs?
 
@@ -28,9 +27,9 @@ The original reason for the advice to avoid branches was quite simple - the
 very early programmable shader core hardware didn't actually support them!
 
 For conditional blocks, shader compilers would emit code to compute all blocks,
-including both `if` and the `else` paths, and then use a conditional select to
-pick the result that was actually needed. You basically always paid the cost of
-the code even if it was logically "branched over".
+including both `if` and `else` paths if they exist, and then use a conditional
+select to pick the result that was actually needed. You basically always paid
+the cost of every code path even if it was logically "branched over".
 
 For loops, shader compilers simply had to unroll them to remove the need for
 branches. Not a bad result, but this could easily result in shader programs
@@ -55,12 +54,14 @@ operations per clock from a single thread, but typically relied on static
 compile-time scheduling techniques such as VLIW instruction bundles and SIMD
 vector operations. These pipelines could be very fast, but relied upon the
 shader compiler being able to to find the parallelism inside each thread to
-fill the available with of the data path.
+fill the available width of the data path.
 
-In general, compilers can only find parallelism inside a "basic block" of
-instructions they know are going to be executed with the same lifetime.
-Branches break up the program into smaller basic blocks, and restrict
-scheduling opportunity ...
+In general, compilers can only group parallel options that are all inside the
+same "basic block" of instructions, because the whole basic block has the same
+execution scope and therefore is known to be atomically schedulable. Branches
+break up the program into smaller basic blocks, and therefore restrict
+scheduling opportunity because the compiler gets a smaller pool of
+instructions to pack into each issue cycle ...
 
 The shader below computes a rather nasty (definitely not PBR) specular light
 contribution from two light sources. This entire shader is effectively a single
@@ -138,7 +139,7 @@ Longest path:     9.00    4.00    0.00        A
 The shortest path - no lights active - gets slightly faster, but the longest
 path - two lights active - has half the performance! Adding branches to this
 shader has broken up the instruction stream into three basic blocks - the main
-outer scope, and one "if" block for each function call. Even though we're
+outer scope, and one `if` block for each function call. Even though we're
 notionally doing less work, the compiler cannot pack out the issue width
 available in the hardware.
 
