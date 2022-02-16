@@ -105,8 +105,8 @@ for (/* */; i < texel_count; i++) {
 ```
 
 
-Problem one: it looks the same, but isn't really ...
-====================================================
+Problem 1: it looks the same, but isn't really ...
+==================================================
 
 The vectorization above looks innocent enough. On the face of it, it is a
 simple like-for-like translation of the C code. However, this code has already
@@ -160,8 +160,8 @@ all use. So that's the first problem solved, at the expense of no-SIMD code
 size!
 
 
-Problem two: variable width accumulators
-========================================
+Problem 2: variable width accumulators
+======================================
 
 The next problem we hit was caused by variable width accumulators. When we are
 targeting AVX2 the vectors are twice as wide, so the horizontal summation
@@ -194,8 +194,8 @@ numbers before combining into a larger one, which gives some scope for small
 errors to cancel out. We can't have both unfortunately, so we chose invariance.
 
 
-Problem three: variable sized loop tails
-========================================
+Problem 3: variable sized loop tails
+====================================
 
 The final problem we hit was caused by the vector loop tails. The typical
 design for a vector loop is to round down to the nearest multiple of the vector
@@ -284,8 +284,21 @@ While not related to accumulators, we have hit other invariance issues related
 to SIMD implementations. I'll try to keep this up to date as we hit new issues
 so it becomes a bit of a reference page.
 
-Problem four: Fast approximations
----------------------------------
+Problem 4: Compiler settings
+----------------------------
+
+If you want determinisim you will need to ensure your compiler is in IEEE754
+strict mode. Optimizations for "fast math" can change associativity and 
+introduce invariance problems, so make sure they are turned off. 
+
+One common gotcha here is that Visual Studio defaults to `precise` math, not
+`strict` math. Precise math actually gives better precision than `strict`, for
+example by using fused operations to preserve intermediate precision, but as 
+it's non-standard you must change that to `strict`.
+
+
+Problem 5: Fast approximations
+------------------------------
 
 Many SIMD instruction sets include operations that give fast approximations of
 other operations, trading accuracy for speed.
@@ -308,8 +321,8 @@ across vendors or even CPUs from the same vendor.
 Conclusion - don't use, and you probably won't see much performance benefit
 anyway.
 
-Problem five: Fused operations
-------------------------------
+Problem 6: Fused operations
+---------------------------
 
 Many SIMD instruction sets include fused multiply-accumulate operations, either
 as simple FMA operations or as part of a composite such as a dot product. The
@@ -322,8 +335,8 @@ This is great for floating point error, but bad for invariance as we cannot
 reproduce this consistently across instruction sets, so they also end up on the
 ban list.
 
-Problem five: Standard library functions
-----------------------------------------
+Problem 7: Standard library functions
+-------------------------------------
 
 A lot of the standard library operations that end up as hardware instructions
 seem pretty consistent across hardware implementations, but the more complex
@@ -347,8 +360,8 @@ problems, so you can trade accuracy for speed.
 the range of inputs you might use is critical to ensure your program doesn't
 run off into the weeds ...
 
-Problem seven: Stable min/max
------------------------------
+Problem 8: Stable min/max lane select
+-------------------------------------
 
 While not related to accumulators, when [@aras_p](https://twitter.com/aras_p)
 contributed the new vector-length-agonistic SIMD last year, he found an issue
@@ -412,8 +425,10 @@ best_indexv = hmin(best_indexv);
 int best_index = best_indexv.lane<0>();
 ```
 
-This is a fun case of invariance issues that are not related to floating-point
-code; you'd have this problem with integer trackers too.
+The issue here is that multiple lanes may have the lowest value, and we need
+to deterministically return the lane with the lowest index rather than a 
+random match. This is a fun case of invariance issues that are not related to
+floating-point code; you'd have this problem with integer trackers too.
 
 Updates
 =======
