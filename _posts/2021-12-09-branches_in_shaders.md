@@ -34,8 +34,7 @@ over".
 
 For loops, shader compilers simply had to unroll them to remove the need for
 branches. Not a bad result, but this could easily result in shader programs
-exceeding the exceedingly small available program storage space in the early
-hardware.
+exceeding the very small available program storage space in the early hardware.
 
 For this generation of hardware branches were therefore definitely "bad", but
 luckily for us this is now ancient history and not relevant to modern GPUs.
@@ -61,8 +60,8 @@ In general, compilers can only group parallel options that are all inside the
 same "basic block" of instructions. From the compiler point of view each basic
 block has the same execution scope and therefore is known to be atomically
 schedulable. Branches break up the program into smaller basic blocks, and
-therefore restrict scheduling opportunity because the compiler gets a smaller
-pool of instructions to pack into each issue cycle ...
+therefore restrict performance because the compiler gets a smaller pool of
+instructions to choose from when trying to pack out each issue cycle ...
 
 The shader below computes a rather nasty (definitely not PBR) specular light
 contribution from two light sources. This entire shader is effectively a single
