@@ -87,8 +87,13 @@ of which may be bilinear or trilinear filtered. This can be up to
 although the number of samples needed depends on the orientation of the
 primitive projection relative to the view plane so this is the worst case.
 
+Tips and tricks
+===============
+
+So, how does this distill into performance advice.
+
 Tip 1: Use textureLod when you can
-==================================
+----------------------------------
 
 The `textureLod()` function uses explicit mipmap selection, which tells the
 driver up-front that your shader doesn't need to computed cross-quad
@@ -102,7 +107,7 @@ The `textureLod()` call is fastest when the selected lod level is uniform
 across the warp.
 
 Tip 2: Use texelFetch when you can
-==================================
+----------------------------------
 
 The `texelFetch()` function uses integer coordinate lookup. If you only have a
 single mipmap level and you want nearest filtering then this is a more
@@ -111,7 +116,7 @@ sampler descriptor is needed, and no coordinate calculation is needed, all of
 which improve energy efficiency.
 
 Tip 3: Use textureGather for 1 channel lookups
-==============================================
+----------------------------------------------
 
 If you are downsampling a single channel texture use `textureGather()` to
 return 4 samples in a single cycle, rather than 4 separate `texture()` calls.
@@ -121,7 +126,7 @@ samples within a single 2x2 texel block footprint. Other offset patterns are
 likely to be much slower.
 
 Tip 4: Beware of textureGrad performance
-========================================
+----------------------------------------
 
 On current Mali `textureGrad()` performance is slow, so it is best avoided.
 
@@ -136,7 +141,7 @@ lod = 0.5 * log2(max(dot(dTdx, dTdx), dot(dTdy, dTdy)));
 ```
 
 Tip 5: Use fp16 sampler precision
-=================================
+---------------------------------
 
 Current Mali can return 64 bits of filtered data per fragment per clock. Full
 speed bilinear filtering of 3 or 4 component textures is only possible for
@@ -148,7 +153,7 @@ is probably only 8-bit unorm or 16-bit float anyway, so you _really_ don't need
 a `highp` filtered value.
 
 Tip 6: Use 32-bpp ASTC decode modes
-===================================
+-----------------------------------
 
 Current Mali can only sustian full throughput filtering for formats that are
 32-bit per texel after decompression. This is the default for ETC1/2 textures,
@@ -162,7 +167,7 @@ linear textures (to RGBA8 for LDR, or RGB9e5 for HDR). Doing this also improves
 texture cache capacity.
 
 Tip 7: Anisotropic filter with care
-===================================
+-----------------------------------
 
 Anisotropic filtering can be very expensive in terms of both filtering cycles
 and memory bandwidth. For mobile you want to limit the worst case behavior, but
