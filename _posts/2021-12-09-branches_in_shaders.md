@@ -88,15 +88,21 @@ void main() {
 }
 ```
 
-If we compile this for Mali-T860, a Midgard architecture GPU with this type of
-hardware pipeline, we can see that the expected performance is 4.5 cycles per
-fragment.
+Let's compile this for Mali-T860, a Midgard architecture GPU with this type of
+hardware pipeline, using the Mali Offline Compiler. For this we can see that
+the expected performance is 4.5 cycles per fragment.
 
 ```
                      A      LS       T    Bound
 Shortest path:    4.50    4.00    0.00        A
 Longest path:     4.50    4.00    0.00        A
 ```
+
+If you've not seen these reports before, the offline static analysis report
+gives a cycle estimate for the various parallel pipelines in the GPU. In this
+case "A" (arithmetic) is the dominant cost, at 4.5 cycles per thread. The
+"LS" (load/store pipe) costs 4 cycles a thread, but happens in parallel to the
+arithmetic so shouldn't impact performance. There is no "T" (texturing).
 
 Let's try to naively optimize this by skipping over the specular computation
 for light sources that are too far away from the object we are rendering.
@@ -234,5 +240,5 @@ performance.
 
 However, the GPU isn't the only thing you are trying to optimize. Using some
 uniform branches to control shader behavior can significantly reduce the number
-of program variants you need to manage, which in turn help other aspects of
+of program variants you need to manage, which in turn helps other aspects of
 performance such as making batching easier. Find a pragmatic balance.
