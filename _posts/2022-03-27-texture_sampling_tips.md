@@ -87,8 +87,8 @@ of which may be bilinear or trilinear filtered. This can be up to
 although the number of samples needed depends on the orientation of the
 primitive projection relative to the view plane so this is the worst case.
 
-Tip 1: Use `textureLod` when you can
-====================================
+Tip 1: Use textureLod when you can
+==================================
 
 The `textureLod()` function uses explicit mipmap selection, which tells the
 driver up-front that your shader doesn't need to computed cross-quad
@@ -101,8 +101,8 @@ duration of any helper threads, which improves energy efficiency.
 The `textureLod()` call is fastest when the selected lod level is uniform
 across the warp.
 
-Tip 2: Use `texelFetch` when you can
-====================================
+Tip 2: Use texelFetch when you can
+==================================
 
 The `texelFetch()` function uses integer coordinate lookup. If you only have a
 single mipmap level and you want nearest filtering then this is a more
@@ -110,8 +110,8 @@ efficient lookup than a `texture()` call. No helper thread is needed, no
 sampler descriptor is needed, and no coordinate calculation is needed, all of
 which improve energy efficiency.
 
-Tip 3: Use `textureGather` for 1 channel lookups
-================================================
+Tip 3: Use textureGather for 1 channel lookups
+==============================================
 
 If you are downsampling a single channel texture use `textureGather()` to
 return 4 samples in a single cycle, rather than 4 separate `texture()` calls.
@@ -120,8 +120,8 @@ The `textureGatherOffset()` function is only full-throughput when returning
 samples within a single 2x2 texel block footprint. Other offset patterns are
 likely to be much slower.
 
-Tip 4: Beware of `textureGrad` performance
-==========================================
+Tip 4: Beware of textureGrad performance
+========================================
 
 On current Mali `textureGrad()` performance is slow, so it is best avoided.
 
@@ -161,7 +161,6 @@ use the ASTC decode mode extension to lower the decompressed precision for
 linear textures (to RGBA8 for LDR, or RGB9e5 for HDR). Doing this also improves
 texture cache capacity.
 
-
 Tip 7: Anisotropic filter with care
 ===================================
 
@@ -177,4 +176,3 @@ isn't enough then try trilinear samples with `MAX_ANISOTROPY` of 2.
 
 The other tip is to remember that `MAX_ANISOTROPY` doesn't need to be a power
 of two; try 3 to see if it is good enough before trying 4.
-
