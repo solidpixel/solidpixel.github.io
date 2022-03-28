@@ -52,6 +52,18 @@ Each thread slot in a quad can therefore spawn in one of three modes:
 * A "helper" thread which produces texture coords to help "real" threads.
 * A "idle" slot which is simply disabled because no helper is needed.
 
+The use of fragment quads for mipmap derivatives this is one reason why small
+triangles are so expensive. As triangles shrink, a higher and higher percentage
+of spawned quads will span edges and have fragments with no coverage. For these
+locations you effectively get a new form of overdraw. Multiple quads are needed
+at the same location to complete the necessary coverage to completely color the
+screen, which comes with the linear slowdown caused by rendering multiple
+layers of quads.
+
+The first "tip" is therefore unrelated to texturing. Keep your triangles as big
+as possible, and your fragment shading will go faster as you need to shade
+fewer quads to complete the render.
+
 Filtering modes
 ---------------
 
