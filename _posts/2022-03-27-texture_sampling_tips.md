@@ -20,18 +20,18 @@ point samples that texels represent.
 Reality is messier, and this occurs because of mipmapping.
 
 Mipmap chains store downscaled versions of an image, providing efficient
-pre-filtering of data so the GPU can apply "the right size" of texel to a
-pixel. This avoids renders getting under-sampling shimmer artefacts when
+pre-filtering of data so the GPU can apply "the right size" of texel to a pixel
+at runtime. This avoids renders getting under-sampling shimmer artifacts when
 applying a too-large texture to a distant object. The problem is, how does the
 GPU determine "the right size"?
 
 The hardware needs to pick a mipmap level where the area covered by a texel is
 approximately the same size as a pixel. The problem is that this needs _area_,
 and a single fragment shader thread only has an area-less point sample. To work
-outthe covered area the hardware needs more information. It gets this by
+out the covered area the hardware needs more information. It gets this by
 sampling four fragment threads in parallel. These four threads are arranged as
-2x2 fragment quad, and the sampling unit uses the derivatives between the 4
-coordinates to determine the size of sampled area.
+2x2 fragment quad, and the sampling unit uses the dx/dy derivatives between the
+4 coordinates to estimate the size of the sample area.
 
 Helper threads
 --------------
@@ -41,10 +41,10 @@ happens if some of those threads have no sample coverage, either because they
 never hit a triangle or were culled by early-zs testing?
 
 Even though these threads have no visible output, as there is no fragment
-output, we still need to run enough of the shader for all fragments in the quad
-to compute any value used as an input to a texture coordinate. The API specs
-call these threads "helper threads", and they must stay alive until the last
-mipmapped texture operation has completed.
+sample active, we still need to run enough of the shader for all fragments in
+the quad to compute any value used as an input to a texture coordinate. The API
+specs call these threads "helper threads", and they must stay alive until the
+last mipmapped texture operation has completed.
 
 Each thread slot in a quad can therefore spawn in one of three modes:
 
@@ -70,11 +70,11 @@ Filtering modes
 The basic filtering mode in the hardware is a linear filter within a single
 mipmap level (`GL_LINEAR_MIP_NEAREST`). This is also known as a bilinear
 filter, as you are filtering in two dimensions in the image. For this filter
-the sample perfoms a weighted average based on distance to the nearest 4
+the sample performs a weighted average based on distance to the nearest 4
 texels. For Mali, this filter gives best performance.
 
 The next filtering mode in the hardware is linear filter between two
-mipmap level (`GL_LINEAR_MIP_LINEAR`), also known as trilinear fitlering. This
+mipmap level (`GL_LINEAR_MIP_LINEAR`), also known as trilinear filtering. This
 filter makes two bilinear filters, one from each mipmap level, and then blends
 those two together. For Mali, this filter runs at half the performance of
 bilinear filtering.
@@ -155,7 +155,7 @@ a `highp` filtered value.
 Tip 6: Use 32-bpp ASTC decode modes
 -----------------------------------
 
-Current Mali can only sustian full throughput filtering for formats that are
+Current Mali can only sustain full throughput filtering for formats that are
 32-bit per texel after decompression. This is the default for ETC1/2 textures,
 which decompress into RGBA8. However it can be a problem for ASTC textures
 because the default decompression precision is fp16, unless using the sRGB
