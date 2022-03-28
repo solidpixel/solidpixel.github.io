@@ -231,6 +231,6 @@ engineer I'm still going to argue that compile-time shader specialization to
 avoid branches is going to give you the best results in terms of GPU
 performance. However, the GPU isn't the only thing you are trying to optimize.
 Using some uniform branches to control shader behavior can significantly reduce
-the number of program variants you need to manage, and help other aspects of
-performance such as making batching easier which can reduce CPU overheads of
-due to high draw counts. Find a pragmatic balance.
+the number of program variants you need to manage, which in turn help other
+aspects of performance such as making batching easier. Find a pragmatic
+balance.
