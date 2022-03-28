@@ -217,10 +217,12 @@ Don't use clever maths to avoid branches
 
 On old hardware, shader developers evolved many tricks to avoid branches, using
 arithmetic sequences to replace the need for small branches. In my experience
-these generally hurt performance on modern hardware; most compilers can
-optimize away small branch sequences and the user "doing something clever" will
-normally defeat the compiler optimizer. If you do try being clever please use a
-tool like Mali Offline Compiler to check it actually helps.
+these generally hurt performance on modern hardware.
+
+Most compilers can optimize away small branch sequences where it makes sense to
+do so, and the user "doing something clever" will normally defeat the compiler
+optimizer. If you do try being clever please use a tool like Mali Offline
+Compiler to check it actually helps.
 
 Use literal constant loop limits
 --------------------------------
