@@ -240,7 +240,18 @@ engineer I'm still going to argue that compile-time shader specialization to
 avoid branches is going to give you the best results in terms of GPU
 performance.
 
+In addition, complex "uber shaders" with lots of branches will tend to have
+higher register usage than simpler shaders which contain only what they need.
+Higher register usage can in turn reduce shader core thread occupancy if usage
+goes over a break point. For example, on recent Mali cores you only get full
+occupancy if a shader uses 32 or fewer work registers.
+
 However, the GPU isn't the only thing you are trying to optimize. Using some
 uniform branches to control shader behavior can significantly reduce the number
 of program variants you need to manage, which in turn helps other aspects of
 performance such as making batching easier. Find a pragmatic balance.
+
+Updates
+=======
+
+* **30 Mar '22:** Added a note on register occupancy limitations.
