@@ -43,7 +43,7 @@ Why?
 
 * The layer drivers are under active development and the project actively adds
   new checks and fixes bugs.
-* The layer driver needs to understand the version of Vulkan (and associated)
+* The layer driver needs to understand the version of Vulkan and associated
   extensions implemented by the driver underneath it. Out-of-date layers which
   target an older API version/extension set than the underlying driver will
   often throw incorrect validation errors or just crash.
@@ -82,7 +82,6 @@ adb shell settings put global gpu_debug_layers $LAYER_NAME
 Uninstall script
 ----------------
 
-
 ```bash
 APP=com.your.app.here
 LAYER_LIB=libVkLayer_khronos_validation.so
@@ -95,6 +94,11 @@ adb shell settings delete global gpu_debug_app
 adb shell settings delete global gpu_debug_layers
 adb shell settings delete global gpu_debug_layer_app
 ```
+
+The layer will get removed when you uninstall the application anyway, so you
+can remove the `adb shell run-as $APP rm $LAYER_LIB` step if you want to
+make this script application agnostic. The important part is the settings to
+disable the layers in the Android loader.
 
 Footnotes
 =========
