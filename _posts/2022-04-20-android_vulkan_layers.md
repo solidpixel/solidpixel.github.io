@@ -1,5 +1,5 @@
 ---
-title: Android Vulkan layer quick reference
+title: Android Vulkan layers
 layout: post
 ---
 
@@ -11,17 +11,19 @@ Method
 ======
 
 There are a few different ways to install layer drivers on Android. When doing
-this by hand (and in the Arm developer tools) I really want to avoid modifying
-the application APK, so we use the "load layer from file" method because it has
-the fewest dependencies on other parts of the software.
+this by hand (and in the Arm developer tools) it is convenient to avoid
+modifying the application APK, so we use the "load layer from file" method
+because it has the fewest dependencies on other parts of the software.
 
 As with most Android development this assumes your phone is in developer mode,
-accessible to your desktop over `adb`, and the application you want to debug is
-set to "debuggable" in the application manifest.
+visible to your desktop over `adb`, and the application you want to debug is
+set to "debuggable" in its Android manifest.
 
-You can grab the latest Validation layer binaries from here:
+You can grab the latest Khronos validation layer binaries from here:
 
-* https://github.com/KhronosGroup/Vulkan-ValidationLayers/releases
+* [https://github.com/KhronosGroup/Vulkan-ValidationLayers/releases][1]
+
+[1]: https://github.com/KhronosGroup/Vulkan-ValidationLayers/releases
 
 The scripts below are Bash scripts, but are trivial enough to translate into
 other shell syntax as needed.
@@ -35,9 +37,9 @@ Basic sequence:
 * Run the uninstall script to cleanup the layer installation
 * Uninstall your application
 
-Note: The layer install must be _after_ the application, and the uninstall must
-be _before_ the application, as we use "run-as" to get permissions to copy
-files into the application-local file system partition.
+**Note:** The layer install must be _after_ the application, and the uninstall
+must be _before_ the application, as the helper scripts use "run-as" to get
+permission to copy files into the application-local file system partition.
 
 Install script
 --------------
@@ -73,7 +75,7 @@ adb shell settings delete global gpu_debug_layer_app
 ```
 
 Footnotes
----------
+=========
 
 Android is ... intolerant ... of missing layer drivers. If you leave debug
 layers enabled in the Android settings but delete the layer library you will
