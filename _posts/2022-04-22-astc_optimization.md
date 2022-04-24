@@ -312,6 +312,21 @@ gather operations only support 32-bit accesses, so there are cases where we
 could have used narrower types but were forced to promote to 32-bit so we could
 use hardware gathers.
 
+Deabstraction ...
+-----------------
+
+Code with nicely modular functionality with clean interfaces and a high degree
+of orthogonality is great for maintainability and legibility. But it can be
+terrible for performance. The main pain-point is that you typically need to
+round-trip data via memory when crossing layers in the abstraction, so you end
+up spending a lot of time picking up and putting down data rather that
+actually doing useful processing.
+
+Tactically removing abstractions on critical paths, and merging loops so we
+only have to touch data once, can be a very powerful tool. BUT, remember that
+you are probably making your code less maintainable so only do this where it
+makes a significant difference.
+
 Link-time optimization
 ----------------------
 
@@ -358,6 +373,21 @@ In some cases splitting loops can be helpful - two smaller loops run serially
 can mitigate register pressure issues - but you usually need to duplicate some
 memory loads or some computation that would have previously been shared - so
 I've found this very hit-and-miss.
+
+Compacting variably-sparse memory
+---------------------------------
+
+ASTC uses a lot of data tables, and for the most part we store these as
+fixed-size structures which contain enough space for the worst-case texel
+count, partition count, and weight count. Nearly every structure entry contains
+a considerable amount of padding, because the worst case is rare.
+
+I tried shrinking these to store only what each case needed to improve memory
+locality. However, because the compaction is different in every case you
+inevitably need to start storing some additional level of indirection - either
+an actual pointer or an array offset for a packed array. Suddenly you put a
+dependent memory lookup on your critical path, so any gain is lost. Direct
+addressing is really useful and painful to lose.
 
 Useful tools
 ============
@@ -410,3 +440,5 @@ Updates
 =======
 
 * **23 Apr '22:** Added a section on tools.
+* **24 Apr '22:** Added sections on deabstraction and compacting
+  variably-sparse memory
