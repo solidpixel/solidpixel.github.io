@@ -97,7 +97,7 @@ path to be streamlined for even more performance.
 Dynamic search-space reduction
 ------------------------------
 
-The second set changes I made to the compressor were those that dynamically
+The second set of changes I made to the compressor were those that dynamically
 reduce the searched encoding space based on predicted benefit of those
 encodings. Most of the search-space reduction today is based on data point
 extrapolation. Do some trials, and based on that empirical data extrapolate to
