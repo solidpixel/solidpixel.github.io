@@ -374,6 +374,27 @@ can mitigate register pressure issues - but you usually need to duplicate some
 memory loads or some computation that would have previously been shared - so
 I've found this very hit-and-miss.
 
+Wide vectorization
+------------------
+
+Optimizing for AVX2 gives us access to 8-wide vectors, which we typically use
+to target using SoA memory layout so we can write vector-length agnostic code.
+When vectorizing in this form we're often trying to replace code which is
+already vectorized 4-wide using AoS RGBA vectors. This gives two challenges.
+
+Firstly the available peak uplift is only 2x vs what we have already, which in
+the grand-scheme of things isn't a particularly large multiplier. It's very
+easy to "spend" this gain on overhead if you need to start adding lane masking
+or other forms of sparse data/loop tail management.
+
+The other challenge is that we also still need to maintain the performance of
+4-wide SSE and NEON. For these use cases we can accept no improvement, but we
+really don't want a regression with the new solution.
+
+There are definitely parts of the code where using 8-wide vectors has proven
+beyond my abilities to achieve a net gain in performance for AVX2, let alone
+the fallback case.
+
 Compacting variably-sparse memory
 ---------------------------------
 
@@ -442,3 +463,4 @@ Updates
 * **23 Apr '22:** Added a section on tools.
 * **24 Apr '22:** Added sections on deabstraction and compacting
   variably-sparse memory
+* **26 Apr '22:** Added section on wide vectorization.
