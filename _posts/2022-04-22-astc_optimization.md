@@ -55,11 +55,11 @@ less expensive than the gained performance, the overall frontier advances.
 
 ![Pareto frontier improvement]({{ "../../../assets/images/optimize/Picture1.png" | relative_url }}){:.center-image}
 
-The only case where this argument isn't true is for the high quality end of the
-compression spectrum. If we remove options that impact the best quality mode
-there isn't a "better quality" option that can be used to recover any losses.
-We are therefore more careful with search-space reductions that impact the
-top-end, as that is quality permanently lost to the void.
+The only case where this argument isn't true is for the highest quality end of
+the compression spectrum. If we remove options that impact the best quality
+mode there isn't a "better quality" option that can be used to recover any
+losses. We are therefore more careful with search-space reductions that impact
+the top-end, as that is quality permanently lost to the void.
 
 
 Optimizing along the frontier
@@ -85,31 +85,31 @@ the compressor is now simply incapable of generating, because they are so
 rarely useful in practice that it's not worth testing them.
 
 The main area where this was applied was restricting the dual weight-plane use
-to single partition encodings. Technically ASTC allows dual-plane encodings for
-two and three partition encodings, but trying to store two planes of weights
+to single partition encodings. Technically ASTC allows two planes of weights
+for two and three partition encodings, but trying to store this many weights
 AND four or six color endpoints nearly always requires too much quantization of
 the stored values to be useful.
 
-One side effect of this removal is that we know that the dual-partition path
-in the codec only ever has to handle a single partition, which allows that code
-path to be streamlined for even more performance.
+One bonus side effect of this removal is that we know that the dual-partition
+path in the codec now only ever has to handle a single partition, which allows
+that code path to be streamlined for even more performance.
 
 Dynamic search-space reduction
 ------------------------------
 
 The second set of changes I made to the compressor were those that dynamically
 reduce the searched encoding space based on predicted benefit of those
-encodings. Most of the search-space reduction today is based on data point
-extrapolation. Do some trials, and based on that empirical data extrapolate to
-see if further trials along that axis of the search space are likely to
-beat the best encoding we already know about.
+encodings. Most of the dynamic search-space reduction today is based on data
+point extrapolation. Do some trials, and based on that empirical data
+extrapolate to see if further trials along that axis of the search space are
+likely to beat the best encoding we already know about.
 
-The first major area where this is applied is to the use of dual weight-plane
-encodings. ASTC can assign any one of the 4 color channels to the second weight
-plane, so we technically have 4 candidates to try for RGBA data. If the error
-for the first attempted dual-plane encoding is more than X% worse than best
-single-plane encoding, then we assume that no dual-plane encoding is worth
-considering and early-out the dual-plane searches.
+The first major area where this is applied is to the use of the dual
+weight-plane encodings. ASTC can assign any one of the 4 color channels to the
+second weight plane, so we technically have 4 candidates to try for RGBA data.
+If the error for the first attempted dual-plane encoding is more than X% worse
+than best single-plane encoding, then we assume that no dual-plane encoding is
+worth considering and early-out the dual-plane searches.
 
 We can be quite conservative with the values of X here - a lack of suitable
 bitrate means that image quality often collapses for bad coding choices.
@@ -359,6 +359,32 @@ decrementing loops, which use zero as a terminator condition. The idea here was
 that compare with zero is less expensive than a compare with a non-zero value.
 I didn't really expect this to help on modern hardware, and it didn't ...
 
+Approximate SIMD reciprocals
+----------------------------
+
+The SSE instruction set includes some operations to compute approximations of
+the reciprocal and the reciprocal square root of a number. On some late 1990s
+hardware these were worth using, as the real division was probably a scalar
+loop over the vector, but on modern hardware they are almost never a gain.
+
+The first performance problem is that these estimates are not actually that
+accurate. Unless you can use the initial estimate directly, you will need to
+add at least one iteration of Newton-Raphson in to improve the accuracy which
+makes the operation a lot more expensive.
+
+The other performance problem is that you replace SIMD divides (which execute
+in a dedicated divisor pipeline) with instructions which operate in the general
+purpose SIMD processing pipelines. The "expensive" division operation is
+effectively free as long as you can hide the result latency, whereas the "fast"
+alternative clogs up the functional units you really wanted to be using to do
+other work.
+
+The final problem is a functional one. We want invariant output by default, and
+these instructions produce variable results across vendors and across products
+from the same vendor.
+
+Consign these intrinsics to the history books - they have no place in new code.
+
 Vectorizing long loops
 ----------------------
 
@@ -464,3 +490,4 @@ Updates
 * **24 Apr '22:** Added sections on deabstraction and compacting
   variably-sparse memory
 * **26 Apr '22:** Added section on wide vectorization.
+* **30 Apr '22:** Added section on approximate SIMD reciprocals.
