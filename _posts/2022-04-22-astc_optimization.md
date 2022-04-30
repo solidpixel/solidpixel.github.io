@@ -483,6 +483,28 @@ turns out to be a dud!
 I hope you find this a useful source of inspiration! I have - just by writing
 this down I've thought of a few new ideas to try ...
 
+A follow up
+-----------
+
+**Update:** I realised while writing this blog that the NEON emulation of the
+`vblend` "test MSB for lane select" behavior was probably unnecessary most of
+the time. The original NEON implementation was just a port of the existing
+4-wide SSE library and inherited the same semantics, so I automatically added
+MSB replication to `select()` so we had the same behavior across all
+instruction sets. However ...
+
+For both x86 and NEON using SIMD condition tests will set all bits in the lane,
+so in these cases NEON doesn't actually need to do MSB replication. Removing
+this saves two NEON instructions for selects of this style, and accounts for
+more than 95% of the select instances in the codec. SIMD selects are used a lot
+in our hot loops, so improving NEON select improved performance by almost 30%
+which makes me very happy!
+
+The one case where we rely on the MSB select behavior is for selecting float
+lanes based on their sign bit, so I added an explicit `select_msb()` variant
+for this use case. This is more expensive on NEON, but we only use it in one
+place in the codec so it's only a minor inconvenience.
+
 Updates
 =======
 
@@ -490,4 +512,5 @@ Updates
 * **24 Apr '22:** Added sections on deabstraction and compacting
   variably-sparse memory
 * **26 Apr '22:** Added section on wide vectorization.
-* **30 Apr '22:** Added section on approximate SIMD reciprocals.
+* **30 Apr '22:** Added section on approximate SIMD reciprocals, and the follow
+  un on NEON select performance.
