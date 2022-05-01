@@ -513,4 +513,4 @@ Updates
   variably-sparse memory
 * **26 Apr '22:** Added section on wide vectorization.
 * **30 Apr '22:** Added section on approximate SIMD reciprocals, and the follow
-  un on NEON select performance.
+  on about NEON select performance.
