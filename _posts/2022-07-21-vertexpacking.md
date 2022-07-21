@@ -72,7 +72,7 @@ Summary
 =======
 
 The most bandwidth-optimal approach for vertex streams on tile-based GPUs
-is two pack two interleaved streams. The first stream should contain all
+is to pack two interleaved streams. The first stream should contain all
 inputs that contribute to position calculation, interleaved together. The
 second stream should contain all of the other attributes, interleaved together.
 
