@@ -19,15 +19,15 @@ Position-only streams
 Most mobile GPUs are tile-based and do an early primitive binning pass to
 determine which primitives contribute to which tiles. Binning only needs
 primitive position, so it is a common optimization for an implementation to
-split the vertex shader into two pieces. The first only compute the clip-space
+split the vertex shader into two pieces. The first only computes the clip-space
 position, the second computes everything else. Importantly, the second part of
 the vertex shader only needs to run for visible vertices that survive culling.
 
-If an application uses fully interleaved attributes the position input data and
-the non-position data will share the same cache line. Fetching position during
-the first shading phase will also fetch everything else from DRAM, even if
-ultimately the non-position data is never used because the primitive is culled.
-This is bad for energy efficiency and performance.
+If an application uses fully interleaved attributes, the position input data
+and the non-position data will share the same cache line. Fetching position
+during the first shading phase will also fetch everything else from DRAM, even
+if ultimately the non-position data is never used because the primitive is
+culled. This is bad for energy efficiency and performance.
 
 To get any bandwidth saving from this shader splitting it is therefore
 necessary to separate out the position related attributes into one stream,
@@ -60,11 +60,13 @@ that contains data for some non-visible vertices. If we assume a statistically
 random distribution, each silhouette crossing will cost us half a cache line
 per non-position data stream in wasted memory fetch.
 
-For interleaved streams we only waste half a cache line.
+For interleaved streams we only have a single stream, so we waste half a cache
+line per crossing.
 
-For fully deinterleaved streams we waste half a cache line per non-position
-attribute. This style of streams wastes considerably more bandwidth along the
-visibility silhouette than an interleaved stream.
+For fully deinterleaved streams we have one stream per attribute, so we waste
+half a cache line per non-position attribute per crossing. This style of
+streams wastes considerably more bandwidth along the visibility silhouette than
+an interleaved stream.
 
 Summary
 =======
