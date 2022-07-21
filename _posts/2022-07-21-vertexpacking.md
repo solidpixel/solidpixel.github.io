@@ -76,11 +76,11 @@ is two pack two interleaved streams. The first stream should contain all
 inputs that contribute to position calculation, interleaved together. The
 second stream should contain all of the other attributes, interleaved together.
 
-The second stream will only be fetched for visible vertices which is only
-half the time in the best case (facing test), and often far less than this
-(large batches that end up only partially on-screen). This is a considerable
-memory bandwidth saving over fully interleaved, and marginally more efficient
-than fully deinterleaved.
+The second stream will only be fetched for visible vertices which is only half
+the time in the best case (facing test), and often far less than this (large
+batches that end up only partially on-screen). This is a considerable memory
+bandwidth saving over fully interleaved, and more efficient than fully
+deinterleaved.
 
 *EDIT* I should mention it's best to pack both streams in to the same buffer;
 this reduces the number of buffer descriptors the hardware has to worry about.
