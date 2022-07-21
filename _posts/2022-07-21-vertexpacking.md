@@ -81,3 +81,6 @@ half the time in the best case (facing test), and often far less than this
 (large batches that end up only partially on-screen). This is a considerable
 memory bandwidth saving over fully interleaved, and marginally more efficient
 than fully deinterleaved.
+
+*EDIT* I should mention it's best to pack both streams in to the same buffer;
+this reduces the number of buffer descriptors the hardware has to worry about.
