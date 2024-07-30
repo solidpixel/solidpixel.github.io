@@ -1,0 +1,59 @@
+---
+title: Archive
+permalink: "archive/index.html"
+---
+<div class="page-archive">
+
+  <div>
+    <p>Blog sort:
+    <span id="blogsort" class="btn-group btn-toggle">
+      <button id="sorttopic" class="btn btn-xs btn-default">Topic</button>
+      <button id="sortdate" class="btn btn-xs btn-success active">Date</button>
+    </span>
+    </p>
+  </div>
+
+  <div id="postdate">
+    {% for post in site.posts %}
+      {% assign post_month_year = post.date | date: "%B %Y" %}
+      {% assign newer_post_month_year = post.next.date | date: "%B %Y" %}
+      {% if post_month_year != newer_post_month_year %}
+      <h3 class="section-header-archive">{{ post_month_year }}</h3>
+      {% endif %}
+      <p>
+        <a href="{{ post.url | prepend:site.baseurl}}" class="post-title-archive">{{ post.title }}</a>
+        <small class="text-muted">{{ post.date | date_to_string }}</small>
+      </p>
+    {% endfor %}
+  </div>
+
+  <div id="posttopic" style="display: none;">
+    {% capture tags %}
+      {% for tag in site.tags %}
+        {{ tag[0] }},
+      {% endfor %}
+    {% endcapture %}
+    {% assign sortedtags = tags | split:',' | sort_natural %}
+
+    {% for tag in sortedtags %}
+      {% assign tag2 = tag | strip %}
+      {% if tag2 == blank %}
+        {% continue %}
+      {% endif %}
+
+      <h3 class="section-header-archive" id="{{ tag2 }}">{{ tag2 }}</h3>
+
+      {% for post in site.tags[tag2] %}
+      <p>
+        <a href="{{ post.url | prepend:site.baseurl}}" class="post-title-archive">{{ post.title }}</a>
+        <small class="text-muted">{{ post.date | date_to_string }}</small>
+      </p>
+      {% endfor %}
+    {% endfor %}
+  </div>
+
+</div>
+
+
+
+

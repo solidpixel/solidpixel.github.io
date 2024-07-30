@@ -1,0 +1,19 @@
+---
+layout: default
+---
+
+<div class="post-header">
+  <h1 class="post-title-main">{{ page.title }}</h1>
+</div>
+<div class="post-content">
+  {{ content }}
+</div>
+
+<div class="PageNavigation">
+  {% if page.previous.url %}
+    <span style="float:left;"><a class="prev" href="{{page.previous.url}}">&laquo; {{page.previous.title}}</a></span>
+  {% endif %}
+  {% if page.next.url %}
+    <span style="float:right;"><a class="next" href="{{page.next.url}}">{{page.next.title}} &raquo;</a></span>
+  {% endif %}
+</div>

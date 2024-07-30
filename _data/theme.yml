@@ -1,0 +1,12 @@
+# Number of posts displayed on the home page.
+num_home_posts: 3
+
+# Select color theme:
+# default, dark, turquoise, green, blue, blue, purple, orange, red
+color: dark
+
+# Show navigation below each post?
+show_post_navs: true
+
+# Hides the sidebar.
+hide_sidebar: true
