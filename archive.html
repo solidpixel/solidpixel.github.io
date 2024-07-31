@@ -4,16 +4,16 @@ permalink: "archive/index.html"
 ---
 <div class="page-archive">
 
-  <div>
+  <div class="sortcontrol">
     <p>Blog sort:
     <span id="blogsort" class="btn-group btn-toggle">
-      <button id="sorttopic" class="btn btn-xs btn-default">Topic</button>
-      <button id="sortdate" class="btn btn-xs btn-success active">Date</button>
+      <button id="sortdate" class="btn btn-xs btn-default">Date</button>
+      <button id="sorttopic" class="btn btn-xs btn-success active">Topic</button>
     </span>
     </p>
   </div>
 
-  <div id="postdate">
+  <div id="postdate" style="display: none;">
     {% for post in site.posts %}
       {% assign post_month_year = post.date | date: "%B %Y" %}
       {% assign newer_post_month_year = post.next.date | date: "%B %Y" %}
@@ -27,7 +27,7 @@ permalink: "archive/index.html"
     {% endfor %}
   </div>
 
-  <div id="posttopic" style="display: none;">
+  <div id="posttopic">
     {% capture tags %}
       {% for tag in site.tags %}
         {{ tag[0] }},

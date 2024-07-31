@@ -8,20 +8,20 @@
 <h1>Recent blogs</h1>
 
 {% for post in site.posts limit:site.data.theme.num_home_posts %}
-<div class="post-header-home">
-  <h2 class="post-title-home">
-    <a href="{{ post.url | prepend:site.baseurl }}">{{ post.title }}</a>
-  </h2>
-  <div>
-    <p class="text-muted">{{ post.date | date_to_string }}</p>
+  <div class="post-header-home">
+    <h2 class="post-title-home">
+      <a href="{{ post.url | prepend:site.baseurl }}">{{ post.title }}</a>
+    </h2>
+    <div>
+      <p class="text-muted">{{ post.date | date_to_string }}</p>
+    </div>
   </div>
-</div>
-<div class="post-excerpt-home">
-  {{ post.excerpt }}
-  <p class="text-right"><a href="{{ post.url | prepend:site.baseurl }}">Read more ...</a></p>
-</div>
+  <div class="post-excerpt-home">
+    {{ post.excerpt }}
+    <p class="text-right"><a href="{{ post.url | prepend:site.baseurl }}">Read more ...</a></p>
+  </div>
 {% endfor %}
-<hr>
+
 <div class="home-read-more">
-  <a href="{{ "/archive" | prepend:site.baseurl }}" class="btn btn-primary btn-block btn-md">See all {{ site.posts | size }} blogs ...</a>
+  <a href="{{ "/archive" | prepend:site.baseurl }}" class="btn btn-primary btn-block btn-md ">See all {{ site.posts | size }} blogs ...</a>
 </div>
