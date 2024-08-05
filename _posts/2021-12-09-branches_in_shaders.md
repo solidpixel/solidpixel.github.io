@@ -10,7 +10,7 @@ information that is now years out of date. This blog is a rummage around the
 topic, looking at branches and loops.
 
 **TLDR:** Used sensibly, branches are perfectly fine in modern GPU hardware.
-But ... there are some recommendations to get best performance out of them.
+But there are some recommendations to get best performance out of them.
 
 Taxonomy of branch execution
 ============================
@@ -24,7 +24,7 @@ So, what makes branches expensive for GPUs?
 Ancient history
 ---------------
 
-The original reason for the advice to avoid branches was quite simple - the
+The original reason for the advice to avoid branches was quite simple. The
 very early programmable shader core hardware didn't actually support them!
 
 For conditional blocks, shader compilers would emit code to compute all blocks,
@@ -33,36 +33,38 @@ conditional select to pick the result that was actually needed. You basically
 always paid the cost of every code path even if it was logically "branched
 over".
 
-For loops, shader compilers simply had to unroll them to remove the need for
-branches. Not a bad result, but this could easily result in shader programs
-exceeding the very small available program storage space in the early hardware.
+For loops, shader compilers simply had to completely unroll them to remove the
+need for branches. Not a bad result, but this could easily result in shader
+programs exceeding the very small available program storage space in the early
+hardware.
 
-For this generation of hardware branches were therefore definitely "bad", but
-luckily for us this is now ancient history and not relevant to modern GPUs.
+For this generation of hardware, branches were therefore definitely "bad".
+Luckily for us this is now ancient history and not relevant to modern GPUs.
 
 DSP-like hardware
 -----------------
 
 The next generations of hardware added support for native branches, allowing
-all of the control flow you would expect to see supported in a modern
-processor. However, the shader cores often used DSP-like approaches in their
-hardware design. These can be significantly impacted by the presence of
+all of the control flow constructs that you would expect to see supported in a
+modern processor. However, the shader cores often used DSP-like approaches in
+their hardware design. These can be significantly impacted by the presence of
 branches, even if the branches themselves are not actually that slow.
 
-For this hardware generation there were no warps or waves; shader cores
-executed single threads as independent entities. Data processing pipelines
-could issue multiple operations per clock from a single thread, but typically
-relied on static compile-time scheduling techniques such as VLIW instruction
-bundles and SIMD vector operations. These pipelines could be very fast, but
-relied upon the shader compiler being able to to find the parallelism inside
-each thread to fill the available width of the data path.
+For this hardware generation shader cores executed single threads as
+independent entities, predating the modern warp/wave designs we see today.
+Cores could issue multiple operations per clock from a single thread, but
+typically relied on static compile-time scheduling techniques such as VLIW
+instruction bundles and SIMD vector operations. These pipelines could be very
+fast, but relied upon the shader compiler being able to to find the parallelism
+inside each thread to fill the available width of the data path.
 
-In general, compilers can only group parallel options that are all inside the
-same "basic block" of instructions. From the compiler point of view each basic
-block has the same execution scope and therefore is known to be atomically
-schedulable. Branches break up the program into smaller basic blocks, and
-therefore restrict performance because the compiler gets a smaller pool of
-instructions to choose from when trying to pack out each issue cycle ...
+Compilers break programs into basic blocks, which are sets of instructions that
+are guaranteed to be executed together. When bundling sets of instructions from
+one thead to fill these wide pipelines, compilers will generally be restricted
+to bundling from within a single basic block. Branches are "bad" in this
+architecture because they break up the program into smaller basic blocks, and
+therefore give the compiler a smaller pool of instructions to use when trying
+to fill the pipeline.
 
 The shader below computes a rather nasty (definitely not PBR) specular light
 contribution from two light sources. This entire shader is effectively a single
@@ -147,14 +149,14 @@ The shortest path with no lights active gets slightly faster, but the longest
 path with two lights active has half the performance! Adding branches to this
 shader has broken up the instruction stream into three basic blocks: the main
 outer scope, and one `if` block for each function call. Even though we're
-notionally doing less work, the compiler cannot pack out the issue width
-available in the hardware so performance drops.
+notionally doing less work, the compiler cannot fill the issue width of the
+hardware and performance drops.
 
-For this generation of hardware branches therefore still count as "bad", but
-for quite a different reason to the early shader hardware. Note, you can still
-find this generation of hardware in some older mobile devices, so beware if you
-are targeting devices that are 5+ years old, but it's also now mostly consigned
-to history.
+For this generation of hardware branches are therefore still "bad", but for
+quite a different reason to the early shader hardware. Note, you can still find
+this generation of hardware in some older mobile devices, so beware if you are
+targeting devices that are 6+ years old, but it's also now mostly consigned to
+history.
 
 Scalar warp/wave hardware
 -------------------------
@@ -166,9 +168,9 @@ compute dispatch in lockstep (each group being a warp or a wave).
 
 In these designs branches are not free - there is still some overhead for
 condition checks and the branch itself - but they are very cheap because the
-performance of the hardware is not reliant on the compiler finding the
-parallelism inside a single thread. If we compile the example above for a
-Mali-G78 GPU, we can see:
+performance of the hardware is not reliant on the compiler finding
+instruction-level parallelism inside a single thread. If we compile the example
+above for a Mali-G78 GPU, we can see:
 
 No branch:
 
@@ -199,19 +201,22 @@ concerned about using them in moderation.
 Realities
 =========
 
-Okay, so branches are not terrible but what recommendations are there.
+Okay, so branches are no longer "bad", but there are recommendations to get the
+best performance.
 
 Beware of warp/wave divergence
 ------------------------------
 
 Every thread in a warp/wave must run the same instruction. Branches are
 therefore relatively cheap on modern hardware as long as the whole warp/wave
-branches the same way. If you have divergent control flow, where only some of
-the threads take a control path then the threads on the "wrong" path are masked
-out, and are effectively wasted performance. If you have an if/else and end up
-with threads on both lanes then you've basically reinvented the original
-hardware where both paths get executed. Don't do this. When designing branchy
-code, try to have uniform branches where all threads branch the same way.
+branches the same way.
+
+If you have divergent control flow, where only some of the threads take a
+control path then the threads on the "wrong" path are masked out, and are
+effectively wasted performance. If you have an if/else and end up with threads
+on both lanes then you've basically reinvented the original hardware where both
+paths get executed. Don't do this. When designing branchy code, try to have
+uniform branches where all threads branch the same way.
 
 Don't use clever maths to avoid branches
 ----------------------------------------
@@ -221,7 +226,7 @@ arithmetic sequences to replace the need for small branches. In my experience
 these generally hurt performance on modern hardware.
 
 Most compilers can optimize away small branch sequences where it makes sense to
-do so, and the user "doing something clever" will normally defeat the compiler
+do so, and the user "doing something clever" will normally defeat the compiler's
 optimizer. If you do try being clever please use a tool like Mali Offline
 Compiler to check it actually helps.
 
