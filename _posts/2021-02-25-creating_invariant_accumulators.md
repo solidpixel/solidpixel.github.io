@@ -13,7 +13,7 @@ different just because a different machine was used to build it.
 With the upcoming 2.5 release we've decided to aim for invariance by default,
 even though it has a slight performance hit, because it just makes life easier
 for downstream game developers. This week threw up an interesting set of case
-studies for where invariance can go wrong ...
+studies for where invariance goes wrong ...
 
 Before I go off a ramble about floating-point maths, the important learning
 point of this blog is that by the end of it you'll know how to write an
@@ -24,11 +24,11 @@ the common pitfalls that occur along the way ...
 Floating-point is evil
 ======================
 
-The root cause of all of the invariance problems is floating-point arithmetic.
-Due to the dynamic precision of floating-point numbers, the accuracy of the
-number represented by a sequence of processing operations depends on the values
-of the numbers involved. Changing the order of operations changes the value of
-the intermediate numbers, which changes the precision, which can change the
+The root cause of invariance problems is floating-point arithmetic. Due to the
+dynamic precision of floating-point numbers, the accuracy of the number
+represented by a sequence of processing operations depends on the values of the
+numbers involved. Changing the order of operations changes the value of the
+intermediate numbers, which changes the precision, which changes the
 accumulated error, which ultimately changes the final result.
 
 This sensitivity to ordering is the reason why IEEE754 is so fussy about
@@ -62,17 +62,17 @@ Floating-point meets SIMD
 
 As part of the optimization work for the `astcenc` 2.x series, I've been adding
 extensive vectorization for all of the usual architecture candidates: SSE, AVX,
-and (of course) NEON. Many seemingly innocent patterns of SIMD usage can
-introduce reassociation differences, and most months see me hunting down a new
-unintended variability that I've introduced ...
+and (of course) NEON. Many seemingly innocent patterns of SIMD usage introduce
+reassociation differences, and most months see me hunting down a new unintended
+variability that I've introduced ...
 
 Example pattern
 ---------------
 
-One of the basic patterns for a texture compressor is the error summation loop.
-Given a candidate encoding, iterate through all of the texels and compute the
-error between the encoding and the original data. Do this for many encodings,
-and then pick those that give the lowest accumulated error.
+One of the basic building blocks of a texture compressor is the error summation
+loop. Given a candidate encoding, iterate through all of the texels and compute
+the error between the encoding and the original data. Do this for many
+encodings, and then pick those that give the lowest accumulated error.
 
 The essence of such a loop looks like this:
 
