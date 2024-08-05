@@ -1,7 +1,7 @@
 ---
 title: Floating-point in mobile shaders
 layout: post
-tag: Graphics optimization
+tag: Graphics development
 ---
 
 Computer floating-point maths is the evil twin of sensible real-world maths. It
@@ -266,7 +266,7 @@ Related material
 
 [AW1]: https://blog.demofox.org/2017/11/21/floating-point-precision/
 [BW1]: https://bartwronski.com/2017/04/02/small-float-formats-r11g11b10f-precision/
-[PH1]: {% link _posts/2021-02-25-invariant-tail.md %}
+[PH1]: {% link _posts/2021-02-25-creating_invariant_accumulators.md %}
 
 Change log
 ----------

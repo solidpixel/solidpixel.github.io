@@ -1,18 +1,18 @@
 ---
-title: Invariant float accumulators
+title: Creating invariant floating-point accumulators
 layout: post
 tag: Software development
 ---
 
 One of the requirements we have for `astcenc` is ensuring that the output of
 the codec is consistent across instruction sets. Users quite like having the
-choice of SSE4.1 or AVX2 when their machine supports it -- faster compression
-is always good -- but no dev team wants game builds that look different just
-because a different machine was used to build it.
+choice of NEON, SSE4.1, or AVX2 SIMD when their machine supports it -- faster
+compression is always good -- but no dev team wants a game build that looks
+different just because a different machine was used to build it.
 
 With the upcoming 2.5 release we've decided to aim for invariance by default,
 even though it has a slight performance hit, because it just makes life easier
-for downstream developers. This week threw up an interesting set of case
+for downstream game developers. This week threw up an interesting set of case
 studies for where invariance can go wrong ...
 
 Before I go off a ramble about floating-point maths, the important learning
@@ -29,9 +29,9 @@ Due to the dynamic precision of floating-point numbers, the accuracy of the
 number represented by a sequence of processing operations depends on the values
 of the numbers involved. Changing the order of operations changes the value of
 the intermediate numbers, which changes the precision, which can change the
-accumulated error, which can ultimately change the final result.
+accumulated error, which ultimately changes the final result.
 
-This sensitivity to ordering is the reason why IEEE 754 is so fussy about
+This sensitivity to ordering is the reason why IEEE754 is so fussy about
 the associativity of operations, and strict adherence to the specification
 prevents many compiler optimizations that involve reassociation. When we write
 this in code:
@@ -60,19 +60,19 @@ whereas the original code requires the three additions to be run serially.
 Floating-point meets SIMD
 =========================
 
-As part of the optimization work for the `astcenc` 2.x series I've been adding
+As part of the optimization work for the `astcenc` 2.x series, I've been adding
 extensive vectorization for all of the usual architecture candidates: SSE, AVX,
 and (of course) NEON. Many seemingly innocent patterns of SIMD usage can
-introduce reassociation differences, and most months see me hunting down
-one new unintended variability that I've introduced or another ...
+introduce reassociation differences, and most months see me hunting down a new
+unintended variability that I've introduced ...
 
 Example pattern
 ---------------
 
 One of the basic patterns for a texture compressor is the error summation loop.
 Given a candidate encoding, iterate through all of the texels and compute the
-error between the encoding and the original data, and then pick the candidates
-with the best error.
+error between the encoding and the original data. Do this for many encodings,
+and then pick those that give the lowest accumulated error.
 
 The essence of such a loop looks like this:
 
@@ -111,7 +111,7 @@ Problem 1: it looks the same, but isn't really ...
 
 The vectorization above looks innocent enough. On the face of it, it is a
 simple like-for-like translation of the C code. However, this code has already
-introduced two problems that can introduce invariance problems compared to the
+introduced two changes that introduce invariance problems compared to the
 original scalar implementation. Let's look at what the operations here are
 actually doing under the hood when adding ten iterations ...
 
@@ -130,8 +130,9 @@ vfloat4 error_sumv { (0 + 4), (1 + 5), (2 + 6), (3 + 7) };
 ```
 
 ... which we then horizontal sum before starting the scalar loop tail. SIMD
-horizontal summation will be a halving reduction in all SIMD implementations,
-which will recursively add folded vectors until only a scalar value remains.
+horizontal summation will be a halving reduction in all current SIMD
+implementations, which will recursively add folded vectors until only a scalar
+value remains.
 
 ```c
 float error_sum = ((0 + 4) + (2 + 6)) + ((1 + 5) + (3 + 7));
@@ -147,13 +148,13 @@ In terms of associativity, despite looking similar in the source code, it's
 really not very similar at all!
 
 Actually making scalar code and vector code behave the same with reassociation
-is very difficult. A purely scalar implementation cannot match this in-vector
-partial summation behavior, as it just doesn't have the data at the same time
-to do the reordering. Unpacking a vector so that horizontal operations are done
-in linear order to match the scalar behavior throws away the performance
-benefits we wanted to gain by using SIMD in the first place.
+is a little fiddly. A purely scalar implementation cannot match this in-vector
+partial summation behavior, as it just doesn't have all the data at the same
+time to do the required reordering. Unpacking a vector so that horizontal
+operations can be done in linear order to match the scalar behavior throws away
+the performance benefits we wanted to gain by using SIMD in the first place.
 
-To solve this problem for `astcenc` we decided to change our reference no-SIMD
+To solve this problem for `astcenc` I decided to change our reference no-SIMD
 implementation to use 4-wide vectors, and reordered the internal scalar
 implementation of the horizontal operations such as `dot()` and `hsum()` to
 match the halving reduction pattern that the hardware SIMD instruction sets
@@ -179,30 +180,27 @@ accumulator = (accumulator + iteration0) + iteration1;
 accumulator = accumulator + (iteration0 + iteration1);
 ```
 
-The only fix here is to avoid variable sized accumulators, so we standardized
-on using vec4 accumulators in all of our vectorized loops, with AVX2 making two
-serial vec4 additions into the accumulator for the low and high halves of the
-vector.
+The only fix here is to avoid variable sized accumulators, so I standardized
+on using `vec4` accumulators in all of the vectorized loops, with AVX2 making
+two serial `vec4` additions into the accumulator for the low and high halves of
+the vector. This is slightly slower, but this is a price we must pay if we
+want to achieve an invariant output.
 
-In reality this doesn't actually cost us anything. The extra accumulator
-addition is the same cost as the halving add we would have used to fold the
-vec8 into a single vec4 partial sum.
-
-**Note:** It's worth noting that this approach is actually the wrong thing to
-do if your aim is to minimize floating point error. The AVX2 implementation
-here would give statistically lower error, as we are combining two smaller
-numbers before combining into a larger one, which gives some scope for small
-errors to cancel out. We can't have both unfortunately, so we chose invariance.
+**Note:** It's worth noting that this approach is the wrong thing to do if your
+aim is to minimize floating point error. The AVX2 implementation here would
+give statistically lower error, as we are combining two smaller numbers before
+combining into a larger one, which gives some scope for small errors to cancel
+out.
 
 
 Problem 3: variable sized loop tails
 ====================================
 
-The final problem we hit was caused by the vector loop tails. The typical
-design for a vector loop is to round down to the nearest multiple of the vector
-width, and then use a scalar loop tail to clean up the remainder. The problem
-here is that we are supporting instruction sets with different vector lengths.
-If we have a loop of 13 items, SSE would vectorize 12 and loop tail the last 1,
+The final problem I hit was caused by the vector loop tails. The typical design
+for a vector loop is to round down to the nearest multiple of the vector width,
+and then use a scalar loop tail to clean up the remainder. The problem here is
+that we are supporting instruction sets with different vector lengths. If we
+have a loop of 13 items, SSE would vectorize 12 and loop tail the last 1,
 whereas AVX2 can only vectorize 8 and loop tail the last 5.
 
 Up to this point our loop tail is still just scalar code, which means that
@@ -273,10 +271,12 @@ float error_sum = horizontal_sum(error_sumv);
 ```
 
 ... and with that you have an invariant vectorizable accumulator, that can
-cope with variable length vector instruction sets! In practice invariance isn't
-really that hard, but there are some gotchas like this that you have to watch
-out for, because the obvious way to use SIMD often causes the problems you need
-to avoid!
+cope with variable length vector instruction sets!
+
+In practice invariance isn't really that hard, but the "obvious" way to write
+the code is a pit-trap, and you need to pay attention to the details to get
+a stable output.
+
 
 Other invariance issues
 =======================
@@ -288,7 +288,7 @@ so it becomes a bit of a reference page.
 Problem 4: Compiler settings
 ----------------------------
 
-If you want determinisim you will need to ensure your compiler is in IEEE754
+If you want determinism you will need to ensure your compiler is in IEEE754
 strict mode. Optimizations for "fast math" can change associativity and
 introduce invariance problems, so make sure they are turned off.
 
@@ -297,11 +297,10 @@ One common gotcha here is that Visual Studio defaults to `precise` math, not
 example by using fused operations to preserve intermediate precision, but as
 it's non-standard you must change that to `strict`.
 
-
 Problem 5: Fast approximations
 ------------------------------
 
-Many SIMD instruction sets include operations that give fast approximations of
+Many SIMD instruction sets include operations that give "fast" approximations of
 other operations, trading accuracy for speed.
 
 A good example here is something that replaces divides (`a / d`) with
@@ -316,11 +315,11 @@ the precision up to a useful level, which often eliminates any performance
 gain.
 
 The real killer issue for us, where we care about invariance, is that these
-operations are not precisely specified. The result they give isn't consistent
-across vendors or even CPUs from the same vendor.
+operations are not tightly specified. The result they give isn't consistent
+across vendors, or even CPUs from the same vendor.
 
-Conclusion - don't use, and you probably won't see much performance benefit
-anyway.
+In general, avoid. These instructions are past their prime, and on modern CPUs
+hardware you don't see any performance benefit anyway.
 
 Problem 6: Fused operations
 ---------------------------
@@ -335,6 +334,12 @@ register.
 This is great for floating point error, but bad for invariance as we cannot
 reproduce this consistently across instruction sets, so they also end up on the
 ban list.
+
+**Note:** These can give good performance benefits, as we have so many
+operations that look like FMAs and modern FMA ISA extensions can fuse many
+styles of FMA (fused mul-then-add, fused add-then-mul, fused mul-then-sub,
+etc.). We do support these, but only the user explicitly turns off invariance
+at build time.
 
 Problem 7: Standard library functions
 -------------------------------------
@@ -426,9 +431,10 @@ best_indexv = hmin(best_indexv);
 int best_index = best_indexv.lane<0>();
 ```
 
-The issue here is that multiple lanes may have the lowest value, and we need
-to deterministically return the lane with the lowest index rather than a
-random match. This is a fun case of invariance issues that are not related to
+The issue here is that multiple lanes may have the lowest value, and we needed
+to add code to deterministically return the lane with the lowest index rather
+than a random match, because this changed which encoding was used for the rest
+of the search. This is a fun case of invariance issues that are not related to
 floating-point code; you'd have this problem with integer trackers too.
 
 Updates

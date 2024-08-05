@@ -1,5 +1,5 @@
 ---
-title: Android Vulkan layers
+title: Loading Vulkan layers in Android
 layout: post
 tag: Graphics development
 ---
@@ -12,26 +12,26 @@ Method
 ======
 
 There are a few different ways to install layer drivers on Android. When doing
-this by hand (and in the Arm developer tools) it is convenient to avoid
-modifying the application APK, so I use the "load layer from file" method
+this by hand, and for developer tools, it is convenient to load layers without
+modifying the application APK. I therefore prefer to load layers from disk,
 because it has the fewest dependencies on other parts of the software stack.
 
-As with most Android development this assumes your phone is in developer mode,
-visible to your desktop over `adb`, and the application you want to debug is
-set to "debuggable" in its Android manifest.
+As with most Android development, these instructions assume your device is in
+developer mode, visible to your desktop over `adb`, and your application is set
+to "debuggable" in its Android manifest.
 
 The basic sequence of steps is:
 
 * Install your debuggable APK
-* Copy the layer library matching your app's bitness to a host directory
+* Copy the layer library matching your application's bitness to a host directory
 * Run the install script from the above directory
 * Do your development
 * Run the uninstall script to cleanup the layer installation
 * Uninstall your application
 
-**Note:** The layer install must be _after_ the application, and the uninstall
-must be _before_ the application, as the helper scripts use "run-as" to get
-permission to copy files into the application-local file system partition.
+**Note:** The layer must be installed _after_ the application, and uninstalled
+_before_ the application, because the helper scripts use "run-as" to get
+permission to copy files into the application's file system partition.
 
 The layers
 ==========
@@ -96,18 +96,22 @@ adb shell settings delete global gpu_debug_layers
 adb shell settings delete global gpu_debug_layer_app
 ```
 
-The layer will get removed when you uninstall the application anyway, so you
-can remove the `adb shell run-as $APP rm $LAYER_LIB` step if you want to
-make this script application agnostic. The important part is the settings to
-disable the layers in the Android loader.
+The important parts of this script are the clearing of the settings. This is
+sufficient to disable layers in the Android loader.
+
+I prefer to leave no trace of teh tooling, and remove the layer library too.
+The layer will get removed when you uninstall the application, as it's
+installed in the application directory, so you can remove the
+`adb shell run-as $APP rm $LAYER_LIB` step if you want to make this script
+application agnostic.
 
 Footnotes
 =========
 
-Android is ... intolerant ... of missing layer drivers. If you leave debug
-layers enabled in the Android settings but delete the layer library you will
-get a hard-exit when trying to start the application. If this happens just run
-the uninstall script (or at least the part which clears the settings) and try
+Android is intolerant of missing layer drivers. If you leave debug layers
+enabled in the Android settings but delete the layer library you will get a
+hard-exit when trying to start the application. If this happens just run the
+uninstall script (or at least the part which clears the settings) and try
 again.
 
 

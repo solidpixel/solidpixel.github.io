@@ -6,31 +6,35 @@ tag: ASTC compression
 
 After two years of incremental improvement the astcenc 3.6 release is around
 20 to 25 times faster than the 1.7 release I started with. This blog is a look
-at some of the techniques I used, and a few that I tried but found didn't work.
+at some of the techniques I used, and a few that I tried that didn't work.
 
 The Pareto frontier
 ===================
 
-Before I dive into details of the software optimization techniques I need to
-talk about the the Pareto frontier, in particular as it relates to how users
-deploy the compressor in practice.
+Before I dive into details of the software optimization techniques, I need to
+talk about the the Pareto frontier and how it relates to users deploying
+compressors in real production environments.
 
 A lossy compressor for GPU textures has two main properties we are concerned
-with: compression performance, and the resulting image quality. For nearly all
-texture formats there is some trade-off between the two. A high quality
-compression takes more time than a quick-and-dirty "meh" quality compression. A
-user normally has a range of performance-quality options available to choose
-from, either by configuring a single compressor or by selecting completely
-different compressors.
+with:
 
-If we plot the graph of the available solutions we can see the bound of the
-current start-of-art at any given point on the cost-quality curve. The blue
-line shows the best-in-class Pareto frontier, and it defines the point at which
-a solution is worthwhile to a user.
+* compression time,
+* image quality.
+
+A high-quality compression takes more time than a quick-and-dirty
+compression, and compressors have to find a good balance between speed and
+quality. Users have a range of performance-quality options available to choose
+from, either by configuring a single compressor or by selecting different
+compressors.
+
+If we plot the graph of the available solutions we get the bounding curve of
+the current start-of-art. The blue line shows the best-in-class Pareto
+frontier, and it defines the point at which any new solution becomes worthwhile
+to a user.
 
 ![Pareto frontier]({{ "../../../assets/images/optimize/Picture2.png" | relative_url }}){:.center-image}
 
-Any compressor that falls behind the frontier - the grey entries in the figure
+Any compressor that falls behind the frontier - the grey points in the figure
 above - is effectively obsolete. A user should be choosing an alternative which
 gives more quality at the same performance, or more performance at the same
 quality.
@@ -38,46 +42,48 @@ quality.
 Pareto optimizations
 --------------------
 
-When optimizing a lossy compressor we don't necessarily need to keep an
-identical compression output. The only hard requirement is that the changes
-made are a net "win" relative to the existing frontier.
+When optimizing a lossy compressor we don't need to keep identical image output
+because the user isn't expecting a specific output bit pattern anyway. The only
+hard requirement is that the changes give a net improvement relative to the
+existing frontier.
 
-During optimization it is often possible to find parts of the codec which
-simply do not justify their runtime cost. Removing these gives an absolute
-drop in image quality for a given compressor setting, but moves the modified
-codec to a new state-of-the-art position on the Pareto frontier.
+We have found many parts of the codec that do not justify their runtime cost.
+Removing these gives an absolute drop in image quality for that specific
+configuration, but moves the optimized codec to a new state-of-the-art position
+on the Pareto frontier.
 
 ![Pareto frontier improvement]({{ "../../../assets/images/optimize/Picture3.png" | relative_url }}){:.center-image}
 
 While this seems like a loss for image quality, it is important to remember
-that this isn't a zero-sum game. It is nearly always possible for a user to use
-a more thorough search quality to recover the lost quality. As long as that is
-less expensive than the gained performance, the overall frontier advances.
+that this isn't a zero-sum game. With a highly configurable compressor like
+astcenc we can increase the search depth elsewhere, and as long as that is
+less expensive than the performance the optimization gained, the overall
+frontier advances.
 
 ![Pareto frontier improvement]({{ "../../../assets/images/optimize/Picture1.png" | relative_url }}){:.center-image}
 
-The only case where this argument isn't true is for the highest quality end of
-the compression spectrum. If we remove options that impact the best quality
-mode there isn't a "better quality" option that can be used to recover any
-losses. We are therefore more careful with search-space reductions that impact
-the top-end, as that is quality permanently lost to the void.
+The only case where this argument isn't true is for the highest quality
+configuration. If we remove options that impact the best quality mode there
+isn't a "better quality" option that can be used to recover any quality losses.
+We are therefore more careful with search-space reductions that impact the
+high quality modes, as that is quality permanently lost to the void.
 
 
 Optimizing along the frontier
 =============================
 
-Most of the optimizations to the algorithms and heuristics the compressor uses
-are about trying to manage the amount of the encoding space searched. If we can
-reduce the amount of encoding space searched then that's a direct performance
-win, as we do much less work.
+Most of the optimizations to the compressor have been about trying to manage
+the amount of encoding space that is searched during compression. Intelligently
+reducing the search space is direct performance win, as the compressor needs to
+do much less work testing encodings for suitability.
 
-The downside is that heuristics that cull search-space are never perfect; we
-will sometimes guess wrong and skip encodings that would have given the best
-result. However, as long as the quality loss is sufficiently low that we end
-up on the right side of the Pareto frontier then it's usually a good change to
-make.
+However, the downside is that heuristics that cull search space are never
+perfect. We will sometimes guess wrong and skip encodings that would have given
+a better result. As long as the quality loss is sufficiently low that we end up
+on the right side of the Pareto frontier, then these have usually proven to be
+good changes to make.
 
-Static search-space reduction
+Static search space reduction
 -----------------------------
 
 The biggest changes I made to the compressor were those that simply removed
@@ -85,74 +91,73 @@ portions ASTC encoding space from consideration. There are valid encodings that
 the compressor is now simply incapable of generating, because they are so
 rarely useful in practice that it's not worth testing them.
 
-The main area where this was applied was restricting the dual weight-plane use
-to single partition encodings. Technically ASTC allows two planes of weights
-for two and three partition encodings, but trying to store this many weights
-AND four or six color endpoints nearly always requires too much quantization of
-the stored values to be useful.
+ASTC allows two planes of weights for two and three partition encodings, but
+trying to store this many weights and four or six color endpoints nearly
+always requires too much quantization of the stored values to be useful.
+Therefore astcenc now only support two planes of weights for one partition
+encodings, removing a significant amount of the search space.
 
-One bonus side effect of this removal is that we know that the dual-partition
-path in the codec now only ever has to handle a single partition, which allows
-that code path to be streamlined for even more performance.
+A bonus side-effect of this removal is that the multi-partition paths in the
+codec now only have to handle a single weight plane. This allows a significant
+simplification of this code path, which gives us improved performance for
+multi-partition searches.
 
-Dynamic search-space reduction
+Dynamic search pace reduction
 ------------------------------
 
 The second set of changes I made to the compressor were those that dynamically
-reduce the searched encoding space based on predicted benefit of those
-encodings. Most of the dynamic search-space reduction today is based on data
-point extrapolation. Do some trials, and based on that empirical data
-extrapolate to see if further trials along that axis of the search space are
-likely to beat the best encoding we already know about.
+reduce the search-space based on predicted benefit of those encodings. This is
+mostly based on data point extrapolation from earlier encodings. Do some
+trials, and based on that empirical data extrapolate to see if further trials
+along that axis are likely to beat the best encoding that we already know
+about.
 
-The first major area where this is applied is to the use of the dual
-weight-plane encodings. ASTC can assign any one of the 4 color channels to the
-second weight plane, so we technically have 4 candidates to try for RGBA data.
-If the error for the first attempted dual-plane encoding is more than X% worse
-than best single-plane encoding, then we assume that no dual-plane encoding is
-worth considering and early-out the dual-plane searches.
+We apply this to the use of two planes of weights. ASTC can assign any one of
+the color channels to the second weight plane, so we have 4 candidates to try
+for RGBA data. If the error for the first attempted dual-plane encoding is more
+than X% worse than best single-plane encoding, then we assume that no dual-plane
+encoding is worth considering and early-out the dual-plane searches.
 
-We can be quite conservative with the values of X here - a lack of suitable
-bitrate means that image quality often collapses for bad coding choices.
-Coarse thresholds such as "2x worse" are relatively safe but still manage to
-prune a significant number of searches.
+We can be quite conservative with the values of X here. A lack of bitrate means
+that image quality often collapses for bad coding choices. Conservative
+thresholds such as "skip if 2x worse than current best encoding" are relatively
+safe but still manage to prune a significant number of searches.
 
-The second area where this is applied is to the use of multiple color
-partitions. If N+1 partition encoding is more than X% worse quality than the
-best N partition encoding, then stop the search and don't even try N+2. Again,
-we can be quite conservative on the thresholds but still cull a lot of trials.
+We also apply this to the use of multiple color partitions. If the N+1
+partition encoding is more than X% worse than the best N partition encoding,
+then we stop the search and don't even try N+2. Again, we can be quite
+conservative on the thresholds to avoid hurting quality and still manage to cull
+a lot of trials.
 
-In these cases the values of the X% cut-off thresholds are determined by the
-compressor quality profile, so we get fine control over the heuristics and
-still allow the highest search qualities to test a significant portion of the
-search space.
+The X values of the cut-off thresholds are determined by the current compressor
+quality profile. We get fine control over the heuristics, and can still allow
+the highest search qualities to test a significant portion of the search space.
 
-There is probably a lot more opportunity here for compressor innovation to make
+There is probably more opportunity here for compressor innovation to make
 better up-front predictions without the initial trials, but that's for the
 future ...
 
 Predictive extrapolation
 ------------------------
 
-A lot of texture compression is about making a good initial attempt and then
-applying iterative refinement to jiggle colors and weights around a bit to
-improve the final result. That iterative refinement is critical to getting a
-good quality output, but can be very expensive.
+Texture compression is mostly about making a good initial guess and then
+applying iterative refinement to jiggle colors and weights around to improve
+the final result. That iterative refinement is critical to getting a good
+quality output, as quantized errors are hard to predict, but can be very
+expensive.
 
-
-Within each encoding trial we apply a predictive filter to the iterative
+Within each encoding trial we apply a predictive cull to the iterative
 refinement of colors and weights. We know, based on offline empirical analysis
-of many textures, how much iterative refinement is likely to improve a block.
-It's around 10% for the first refinement pass, and 5% for the second pass, and
-2% for the third. We can estimate, based on the number of iterations remaining
-and a safety margin, whether a block is likely to beat the best block we
-already know about.
+of many textures, how much iterative refinement is likely to improve block
+error. It's around 10% for the first refinement pass, and 5% for the second
+pass, and 2% for the third.
 
-If it's not going to intersect then we simply stop the trial early and move on
-to the next candidate. This is a remarkably effective technique - most
-candidate encodings are poor and will early out with no refinement. With the
-optimization applied we only end up refining ~10% of the total trial candidates
-for medium quality searches.
+To reduce the number of useless iterations we estimate, based on the number of
+iterations remaining, whether a block is likely to beat the current best block.
+If it's not going to intersect then we simply stop and move on to the next
+candidate. This is a remarkably effective technique! Most candidate encodings
+early out and, on average, we only run 10% of the refinement passes for medium
+quality searches.
 
 Code optimization
 =================
@@ -185,14 +190,14 @@ cross-platform does cost some performance, because x86 and Arm do have some
 minor differences which the library has to abstract away. One example of this
 is the vector select operation; x86-64 `vblend` uses the top bit in each lane
 to select which input register is used for the whole lane, whereas Arm NEON
-`bsl` simply does a bit-wise select so needs the whole lane set to 1.
+`bsl` simply does a bit-wise select so needs all bits in the lane set to 1.
 
 AoS to SoA data layout
 ----------------------
 
 Effective vectorization needs a lot of data in an easy-to-access stream layout
 so you don't waste cycles unpacking data. A heavy pivot to structure-of-array
-data layouts is needed, giving you lovely contiguous streams of data to
+data layouts is needed, giving you efficient  contiguous streams of data to
 operate on.
 
 This does come with a downside unfortunately, which is register pressure.
@@ -204,10 +209,10 @@ input data. With SSE and AVX2 having just 16 vector registers to play with,
 things can get tight very quickly, especially if you need long-lived variables
 that persist across loop iterations such as per component accumulators.
 
-One advantage of SoA is that it's easier to skip lanes - for example, it is
-common to have RGB data without an alpha channel so we can simply omit the
-alpha vector from the calculation. Doing this for the original AoS form which
-packs RGBA data in a vector doesn't give any speedup.
+One advantage of SoA is that it's easier to skip lanes. It is common to have
+RGB data without an alpha channel so using SoA-form means we can simply omit
+the alpha vector from the calculation. Doing this for the original AoS form
+would just give a partial vector, and does not give any speedup.
 
 Vectorized loop tails
 ---------------------
@@ -218,35 +223,35 @@ only have tens of iterations, which is common in ASTC, the scalar loop tail can
 end up being a significant percentage of the overall cost.
 
 A much better design is to simply design the algorithm to allow the vectorized
-loop to round up to include the loop tail. Round up arrays to a multiple of
-SIMD size, and where possible fill the tail with values which are passive to
-the processing being performed. This might mean filling with zeros, or it might
-mean replicating the last value - it depends on what you are doing.
+loop to include the loop tail. Where possible, round up arrays to a multiple of
+SIMD size and fill the tail with values which have no impact on the processing
+being performed. This might mean filling the tail with zeros, or it might mean
+replicating the last value. It depends on what you are doing.
 
-In cases where a data value cannot be made passive to the algorithm you'll need
-to start proactively managing the tail. Ideally you can do this outside of the
-main loop by applying a single instance of a vectorized tail with the
-necessary masking applied. Worst case you need to start adding active lane
-masking into the main loop, which starts to cost performance on full vectors
-due to the added instructions and register pressure for the masks. However, for
-short loops like astcenc this is still faster than a separate scalar tail loop
-most of the time.
+If you cannot make the tail padding passive to the algorithm, you'll need
+to start proactively managing the tail and masking lanes. Ideally you can do
+this outside of the main loop, but in the worst-case you need to add lane
+masking into the main loop. This starts to cost performance due to the
+added mask operations, and the register pressure of the masks themselves.
+However, for most short loops in astcenc this is usually still faster than a
+separate scalar tail loop.
 
 Branches
 --------
 
-Modern processors only like branches that they are able to predict. Failing
-to predict a branch correctly can result in 10+ cycles of stall while
-the processor unpicks the bad guess and refills the pipeline.
+Modern processors only like branches that they are able to predict. Failing to
+predict a branch correctly can result in 10+ cycle stall while the processor
+unpicks the bad guess and refills the pipeline. It doesn't take many bad
+predictions for that kind of stall to hurt performance.
 
 Compressor encoding decisions based on the data stream usually end up close to
-random (a sign of a good encoding - we've removed the pattern). Branches for
-these data-centric coding decisions are inherently unpredictable, so half the
-time you hit them you will pay the misprediction penalty.
+random, as data blocks rarely repeat the same pattern. Branches for these
+data-centric coding decisions are inherently unpredictable, so half the time
+you hit them you will pay the misprediction penalty.
 
-The fix here is relatively simple - ban any data-dependent branches in the
-critical parts of the the codec unless they are branching over a _lot_ of work.
-For small branch paths simply compute both paths and use a SIMD `select`
+The fix here is relatively simple - ban data-dependent branches in the critical
+parts of the the codec unless they are branching over a _lot_ of work. For
+small branch paths simply compute both paths and use a SIMD `select`
 instruction to pick the result you want.
 
 This can get a little untidy if you are selecting scalar variables. There is
@@ -258,22 +263,23 @@ Specialization
 --------------
 
 Generic code is often slow code with a lot of control flow overhead to handle
-the various options that the generic path requires. One useful technique is
-to specialize functions for commonly used patterns, and then select which
+the various options that the generic path supports. One useful technique is
+specializing functions for commonly used patterns, and then selecting which
 function variant to run based on the current operation in hand. This is
-effectively a form of loop hoisting - pulling decisions up to an earlier point
-in the stack.
+effectively a form of manual loop hoisting - pulling decisions up to an earlier
+point in the stack.
 
-This has an overhead in terms of performance, as you will have higher i-cache
-pressure due to the larger code size. The gain from specialization needs to
-be higher than the loss of increased cache pressure, or performance will drop.
-In addition, developers will have a higher future maintenance cost to handle
-as there are now multiple variants to test and maintain. Therefore only
-apply this technique where the specialization provides a significant reduction
-in code path complexity and is used with relatively high frequency.
+This has an overhead in terms of performance, as you will have higher
+instruction cache pressure due to the larger code size, so the gain from
+specialization needs to be higher than the loss due to cache misses.
 
-For astcenc there are two major classes of specialization which are used
-widely throughout the codec:
+In addition, developers will have a higher future maintenance cost to handle as
+there are now multiple variants to test and maintain. Therefore, only apply
+this technique where the specialization provides a significant reduction in
+code path complexity and is used with relatively high frequency.
+
+For astcenc there are two main specializations that are used widely throughout
+the codec:
 
 * Separate compressor passes for 1 and 2 weight planes.
 * Separate compressor passes undecimated (1 weight per texel) and decimated
@@ -285,27 +291,28 @@ Data table compaction
 ---------------------
 
 Caches matter. TLBs matter. If your algorithm churns your cache then your
-performance will take a massive hit - a L1 miss that hits in L2 takes ~20
-cycles to resolve. If your algorithm churns your TLB and your cache then that
-can take 100+ cycles to resolve each page table walk and cache miss.
+performance will take a massive hit. A L1 miss that hits in L2 takes ~20
+cycles to resolve, and L2 miss may take 100 cycles ...
 
 There are a whole collection of techniques here, but there are three I've found
 most useful.
 
 The compressor uses a lot of procedurally generated tables for partitioning and
-weight grid decimation, and not every entry is useful (degenerate, duplicate,
-or just low-probability of being used). We often iterate through lists of these
-entries, and if this includes the "not useful" entries we pollute the cache for
-no reason. We now repack the data tables to put the most useful entries at the
-front, and the rarely used ones at the end.
+weight grid decimation information. Due to the way the ASTC header and
+partitioning schemes are encoded, many of the possible entries in the tables
+are not needed. Many entries are not useful (degenerate, duplicates, or disabled
+in the current compressor configuration). The original compressor stored things
+in encoding order, allowing direct indexing but requiring iteration through
+these unused values.
 
-Splitting structures can also be a good technique; different parts of the codec
-need different bits of the partitioning or decimation information. If it's all
-interleaved in a single structure you effectively reduce the capacity of your
-hardware memory structures by pulling in the "other bits" you don't currently
-need because they happen to be nearby. Split structures into tightly packed
-temporally related streams, and reduce the amount of collateral damage on your
-caches.
+The codec now repacks the data tables to tightly pack the active entries,
+ensuring we only iterate through the useful data.
+
+Splitting structures can also be a good technique. Different parts of the codec
+need different bits of the generated tables, and if it's all interleaved in a
+single structure you often pollute the cache pulling in bits you don't
+currently need. Splitting structures into tightly packed temporally-related
+streams helps to reduce the amount of collateral damage on your caches.
 
 The final change is type size reduction. Narrow types in memory = less cache
 pressure = more performance. The one gotcha I've hit with this is that the AVX2
@@ -484,22 +491,21 @@ turns out to be a dud!
 I hope you find this a useful source of inspiration! I have - just by writing
 this down I've thought of a few new ideas to try ...
 
-A follow up
------------
+Follow ups
+==========
 
 **Update:** I realised while writing this blog that the NEON emulation of the
 `vblend` "test MSB for lane select" behavior was probably unnecessary most of
 the time. The original NEON implementation was just a port of the existing
 4-wide SSE library and inherited the same semantics, so I automatically added
-MSB replication to `select()` so we had the same behavior across all
-instruction sets. However ...
+MSB replication to `select()` so we had the same behavior for all instruction
+sets. However ...
 
 For both x86 and NEON using SIMD condition tests will set all bits in the lane,
-so in these cases NEON doesn't actually need to do MSB replication. Removing
-this saves two NEON instructions for selects of this style, and accounts for
-more than 95% of the select instances in the codec. SIMD selects are used a lot
-in our hot loops, so improving NEON select improved performance by almost 30%
-which makes me very happy!
+so in these cases NEON doesn't need to do MSB replication. Removing this saves
+two NEON instructions for every `select()`, and accounts for more than 95% of
+the `select()` instances in the codec. SIMD selects are used a lot in our hot
+loops, so improving NEON `select()` improved performance by almost 30%!
 
 The one case where we rely on the MSB select behavior is for selecting float
 lanes based on their sign bit, so I added an explicit `select_msb()` variant

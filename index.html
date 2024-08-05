@@ -5,6 +5,17 @@
  product design, software development, real-time graphics, texture compression,
  and performance optimization.</p>
 
+{% assign l_aps = 'href="https://developer.arm.com/performance-studio" target="_blank"' %}
+{% assign l_astc = 'href="https://github.com/ARM-software/astc-encoder" target="_blank"' %}
+{% assign l_acc = 'href="https://community.arm.com/members/peterharris/blogs" target="_blank"' %}
+
+<p>Professionally, I am technical product owner for <a {{ l_aps }}>Arm
+  Performance Studio</a>, a suite of performance analysis tools for Arm CPUs and
+  Mali GPUs. I am also maintainer for the <a {{ l_astc}}>Arm ASTC texture
+  compressor</a>, the defacto standard codec for Adaptive Scalable Texture
+  Compression. In addition to my personal blogs here, more of my blogs can be
+  found on <a {{ l_acc }}>community.arm.com</a></p>
+
 <h1>Recent blogs</h1>
 
 {% for post in site.posts limit:site.data.theme.num_home_posts %}
