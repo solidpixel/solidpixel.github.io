@@ -11,7 +11,8 @@ a new ISA each time.
 
 Most of the Arm-designed CPUs implement a 128-bit SVE or SVE2 data path, but
 the Arm Neoverse V1 CPU provides a 256-bit SVE implementation. The wider
-vector implementation was something I just had to try and optimize for ...
+vector implementation was something I just had to try and optimize `astcenc`
+compression for ...
 
 What is SVE?
 ============
@@ -46,7 +47,7 @@ operations. We can just inline them into the data processing operations.
 The second is that predicates have their own dedicated register file, so we
 free up normal vector registers for other data. Arm v8 NEON has 32 registers,
 which is a lot compared to SSE and AVX2 which only have 16, but even this
-gets tight when vectoring data using structure-of-arrays striped data layouts.
+gets tight when vectorizing data using structure-of-arrays striped data layouts.
 More registers always helps ...
 
 Native scatter/gather operations
@@ -78,8 +79,8 @@ the appetite to change this time around.
 
 The second reason is that making performant VLA code produce invariant output
 with our existing implementation doesn't seem easy. In my [earlier blog][INAC]
-I introduced how I made accumulators ISA invariant by always accumulating in
-`vec4` chunks.
+I introduced how I made floating-point accumulators ISA invariant by always
+accumulating in `vec4` chunks.
 
 SVE makes it easy to make vector code invariant with scalar code with the new
 linear reduction `ADDA` instruction, which is great for compiler
@@ -88,9 +89,10 @@ lane reduction. It is functionally possible, but it requires a software loop,
 and this is something you _really_ don't want to add to your inner loop
 processing hot paths.
 
-It should be noted that using s static 256-bit approach still allows is to use
-SVE to augment 128-bit operations, such as using vec4 gathers. In these cases
-we just need to manually use the SVE predicate to disable the top 128 bits.
+It should be noted that using a static 256-bit approach still allows us to use
+SVE to augment 128-bit operations, such as using `vec4` gathers. In these cases
+we just need to manually use the SVE predicate to disable the top 128 bits
+when touching memory.
 
 
 Performance results
@@ -139,14 +141,21 @@ The following operations were notable improvements over NEON equivalents.
 Future work
 ===========
 
+I've only just scratched the surface of SVE with an implementation that is
+mostly a direct port of the original NEON implementation, except for the cases
+where the NEON was using a scalar fallback that had an obvious replacement. I
+have also not yet had a chance to try SVE2, as the Neoverse V1 I have access to
+doesn't support it. I'm sure there are other new instructions that can be used
+to further optimize the performance of the existing codec.
+
 While I have no immediate plan to do it, I would like to try and write a
 new codec implementation that uses integer types. In general, this could have a
 number of advantages for performance, allowing us to do more operations in
 parallel using 8-bit and 16-bit integer operations.
 
-Specifically for SVE, in moving away from floating-point we also remove
+Specifically for SVE, in moving away from floating-point we also remove the
 invariance issues, which means we should be able to write this new codec in a
-way that is amenable to the VLA style.
+way that is amenable to SVE's preferred VLA style.
 
 
 Resources
