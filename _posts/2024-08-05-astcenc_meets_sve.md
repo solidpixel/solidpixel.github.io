@@ -104,10 +104,14 @@ The hardest part was getting a new enough compiler (Clang 17) to pick up a
 pre-packaged version NEON-SVE bridge header, which allows conversion between
 NEON and SVE data types.
 
-Performance was a lot better than I expected, giving a 30% uplift. I found this
-somewhat surprising as Neoverse V1 allows 4-wide NEON issue, or 2-wide SVE
-issue, so in terms of data-width the two should work out very similar. I need to
-investigate more, but the fundamentals reasons seem to be:
+Performance was a lot better than I expected, giving between 10 and 30% uplift.
+Larger block sizes benefitted the most, as we get higher utilization of the
+wider vectors and fewer idle lanes.
+
+I found the scale of the uplift somewhat surprising as Neoverse V1 allows
+4-wide NEON issue, or 2-wide SVE issue, so in terms of data-width the two
+should work out very similar. I need to investigate more, but the fundamentals
+reasons seem to be:
 
 * Using SVE places less pressure on the instruction decoders. It's easier to
   issue two SVE operations per clock than four NEON operations.
@@ -127,15 +131,18 @@ Useful operations
 The following operations were notable improvements over NEON equivalents.
 
 * Gather loads (`svld1_gather...()`) for both `vec4` and `vec8` data types.
-* Table lookups are wider (`svtbl...()`) so we can use faster instruction
-  alternatives with fewer input operands.
-* Masked accumulators (`svadd_f32_m()`) for partial vectors are natively
-  supported, without needing additional operations or data registers.
-* Masked stores (`svst1_u32()`) for partial output writes are natively
-  supported, without falling back to scalar code.
-* Partial stores (`svst1b_u32()`) for writing back the bottom of N bits of a
-  register lane to contiguous memory are natively supported, without needing
-  pre-compaction in registers.
+* Tables lookups (`svtbl...()`) use full register width for tables, and
+  so can store tables in fewer registers when on a 256-bit implementation.
+* Masked accumulators (`svadd_f32_m()`) for partial vectors, without needing
+  additional data masking operations or data registers to hold masks.
+* Masked stores (`svst1_u32()`) for partial vector writes, without a needing a
+  scalar fallback.
+* Narrowing stores (`svst1b_u32()`) for writing the bottom of N bits of a
+  register lane to contiguous memory, without needing manual pre-store
+  compaction.
+* Widening loads (`svld1ub_s32()`) for reading the bottom of N bits of a
+  register lane from contiguous memory, without needing manual post-load
+  expansion.
 
 
 Future work
@@ -172,3 +179,8 @@ Resources
 [V1OG]: https://developer.arm.com/documentation/109897/latest/
 
 [INAC]: {% link _posts/2021-02-25-creating_invariant_accumulators.md %}
+
+Updates
+=======
+
+* 2024/08/06: Added widening loads to useful operation list.
