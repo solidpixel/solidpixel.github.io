@@ -123,6 +123,14 @@ h3 {
 .post-content {
   margin-bottom: $space-md;
 }
+.post-content a {
+  text-decoration: none;
+  border-bottom: dotted 1px #5b7fa4;
+}
+.post-content a:hover {
+  text-decoration: none;
+  border-bottom: none;
+}
 .post-content img,
 .post-excerpt-home img,
 .post-nav img {
