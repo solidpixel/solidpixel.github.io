@@ -1,13 +1,7 @@
 baseurl: ""
 url: "http://solidpixel.github.io"
 title: "solidpixel"
-
-plugins:
-  - jemoji
 exclude:
-  - "README.md"
-  - "CHANGELOG.md"
-  - "CNAME"
   - "Gemfile"
   - "Gemfile.lock"
 permalink: :title
