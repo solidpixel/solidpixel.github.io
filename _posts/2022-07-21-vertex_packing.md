@@ -14,9 +14,7 @@ The best answer will depend on the specific GPU you are targeting, but for
 mobile GPUs the best answer is somewhere between these two extremes. Let's
 explore why ...
 
-
-Mobile geometry hardware
-========================
+## Mobile geometry hardware
 
 Before we worry about how to layout our geometry in memory, it is important to
 understand how the target hardware is going to consume the data.
@@ -31,8 +29,7 @@ else. Most importantly, the second part of the vertex shader will only run for
 vertices that contribute to a visible primitive that survives culling.
 
 
-Fully interleaved
-=================
+## Fully interleaved
 
 The classical approach to passing vertex data is to use a fully interleaved
 array-of-structures approach. Vertices are relatively small, so it is expected
@@ -49,9 +46,7 @@ facing test, so this results in a significant amount of redundant data being
 fetched from memory. Accessing DRAM is energy-intensive, so this is bad for
 performance, thermals, and battery life.
 
-
-Fully deinterleaved
-===================
+## Fully deinterleaved
 
 If fully interleaved is bad, the obvious next alternative to consider is a
 fully deinterleaved structure-of-arrays stream. This gives us optimal position
@@ -72,8 +67,7 @@ non-position attribute stream in wasted memory fetch. This is less efficient
 than interleaved streams which have only a single stream, wasting an average of
 half a cache line per crossing.
 
-Split streams
-=============
+## Split streams
 
 The most efficient method is a hybrid which interleaves all position-related
 attributes in one stream, and all non-position-related attributes in a second.
@@ -87,8 +81,7 @@ position - for example, when generating depth shadow maps. This splitting gives
 automatic use-case specialization for these position-only use cases, without
 any additional effort.
 
-Summary
-=======
+## Summary
 
 The most bandwidth-optimal approach for vertex streams on tile-based GPUs
 is to pack two interleaved streams. The first stream should contain all

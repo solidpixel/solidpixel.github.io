@@ -22,8 +22,7 @@ out of the fp16 format, and hopefully avoid needing to swap to battery-sucking
 `highp` fp32 operations.
 
 
-Taxonomy of a half-float
-========================
+## Taxonomy of a half-float
 
 A fp16 number consists of three components:
 
@@ -56,8 +55,7 @@ can actually generate Infinities or NaNs on any given platform. It you want to
 ensure stable and portable code you *really* want to ensure your arithmetic
 avoids getting into a situation where this matters ...
 
-Half-float on Mali GPUs
------------------------
+### Half-float on Mali GPUs
 
 For Arm Mali GPUs using fp16 data types has multiple advantages over fp32.
 
@@ -73,8 +71,7 @@ For Arm Mali GPUs using fp16 data types has multiple advantages over fp32.
 
 ... so you really do want to use them as much as possible.
 
-Tips and tricks
-===============
+## Tips and tricks
 
 There are two common reasons I hear for developers not using fp16 more:
 
@@ -83,8 +80,7 @@ There are two common reasons I hear for developers not using fp16 more:
 
 ... so here are some tricks that can help.
 
-#1: Be the compiler
--------------------
+### #1: Be the compiler
 
 The variable precision of floating-point means that, unlike real-world maths,
 the result of a computation depends on the order of the computations. Due to
@@ -105,8 +101,7 @@ of their verbose code a compiler will optimize. If in doubt assume the compiler
 isn't going to clean up the mess, and ensure the source code is as lean as
 possible.
 
-#2: Keep numbers small
-----------------------
+### #2: Keep numbers small
 
 The first bit of advice is to order computations to keep numbers as small as
 possible. For example, computing the average of N values could be done as:
@@ -138,8 +133,7 @@ throughput so this is unlikely to be slower in practice. If this style of
 change is the difference that allows you to use fp16 rather than fp32 then it
 is definitely a change worth making.
 
-#3: Wrap periodic numbers
--------------------------
+### #3: Wrap periodic numbers
 
 One of the first support cases I handled for Mali was an application with a
 user interface element that rotated over time. It worked for a while, but after
@@ -176,8 +170,7 @@ uptime in system user interfaces for phones or embedded applications. Designs
 reliant on ever-incrementing floating-point values should always be viewed with
 suspicion.
 
-#4: Exploit the sign bit
-------------------------
+### #4: Exploit the sign bit
 
 Normal floating-point values are always stored with a sign bit, so if you only
 store positive numbers you're effectively wasting half of your available
@@ -189,8 +182,7 @@ precision is actually to wrap inputs into the `[-π, +π)` range. This has half
 the peak magnitude of `[0, 2π)` so preserves 1 additional bit of precision for
 the largest values.
 
-#5: Locate data origin with care
---------------------------------
+### #5: Locate data origin with care
 
 Floating-point numbers are most precise around zero, so locate the data origin
 in your data set where you need the most accuracy. We often see developers
@@ -201,8 +193,7 @@ For example, character meshes tend to need the detail in the face. Locate the
 origin in the middle of the head to ensure that the face and ears can be
 represented accurately, not under the character's feet.
 
-#6: Shader precision can differ from memory precision
------------------------------------------------------
+### #6: Shader precision can differ from memory precision
 
 Finally, for cases where you really do need fp32 computation, remember that
 shader precision doesn't need to be the same as in-memory precision.
@@ -215,8 +206,7 @@ unorm16 if you prefer equally spaced data points) and converted on load. This
 means that you at least save memory bandwidth, which is one of the most
 expensive things you can do on mobile.
 
-#7: Swizzle inside 32-bit chunks
---------------------------------
+### #7: Swizzle inside 32-bit chunks
 
 Many mobile GPUs have a 32-bit per-thread data path in their arithmetic units,
 which gives purely scalar fp32 operations and vec2 SIMD fp16 operations. To get
@@ -245,8 +235,7 @@ not necessarily the source `.rg` and `.ba` pairs, because the compiler can
 swizzle and keep things in alternative swizzle orderings, so spotting problem
 cases does require a bit of manual identification.
 
-Summary
-=======
+## Summary
 
 Using fp16 can be a challenge, but the efficiency gains it can give on mobile
 platforms is a real benefit worth fighting for.
@@ -254,11 +243,7 @@ platforms is a real benefit worth fighting for.
 I've given some tips and tricks here for getting the most out of a fp16 data
 set. Let me know if you have any more!
 
-Appendix
-========
-
-Related material
-----------------
+## Resources
 
 * [**@Atrix256** - Demystifying Floating Point Precision][AW1]
 * [**@BartWronsk** - Small float formats – R11G11B10F precision][BW1]
@@ -268,10 +253,9 @@ Related material
 [BW1]: https://bartwronski.com/2017/04/02/small-float-formats-r11g11b10f-precision/
 [PH1]: {% link _posts/2021-02-25-creating_invariant_accumulators.md %}
 
-Change log
-----------
+## Updates
 
-- **26/11/2021** - Added "Be the compiler" section.
-- **26/11/2021** - Added "Related material" section.
-- **26/11/2021** - Added avoiding stack spills as an advantage.
-- **28/11/2021** - Added "Swizzle inside 32-bit chunks" section.
+* **26 Nov '21:** Added "Be the compiler" section.
+* **26 Nov '21:** Added "Related material" section.
+* **26 Nov '21:** Added avoiding stack spills as an advantage.
+* **28 Nov '21:** Added "Swizzle inside 32-bit chunks" section.

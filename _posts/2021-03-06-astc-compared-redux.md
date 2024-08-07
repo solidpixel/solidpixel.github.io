@@ -15,8 +15,7 @@ which measurably improved the image quality of the `-fast` and `-fastest` modes
 for a ~15% performance hit.
 
 
-In the beginning ...
-====================
+## In the beginning ...
 
 The high image quality, bitrate flexibility, and format coverage of ASTC made
 it a popular format with mobile game developers, the only holdback being older
@@ -61,8 +60,7 @@ contributors.
   optimizations since.
 
 
-Benchmarking setup
-==================
+## Benchmarking setup
 
 All benchmarks on this page are measured on the following platform:
 
@@ -83,15 +81,13 @@ although I doubt it makes much difference to ISPC TexComp, as the core of the
 codec is built by the ISPC compiler.
 
 
-astcenc 2.5 vs astcenc 1.7
-==========================
+## astcenc 2.5 vs astcenc 1.7
 
 Before I look at the competitive analysis against ITC, let's look at the change
 in 2.5 vs the original 1.7 release across a couple of block sizes (4x4 and
 6x6).
 
-4x4 blocks
-----------
+### 4x4 blocks
 
 4x4 blocks provide the highest bitrate option for ASTC (8bpp), so these blocks
 are the easiest to compress and give the best PSNR. In absolute terms there has
@@ -142,8 +138,7 @@ average of 3x faster compression. This is a really nice result that brings
 the best image quality that ASTC can offer to a performance point that is
 usable in real-world development.
 
-6x6 blocks
-----------
+### 6x6 blocks
 
 The general trends we see for 6x6 blocks are very similar to the 4x4 blocks,
 although the relative speed ups are larger, and the relative quality drops are
@@ -164,16 +159,14 @@ seeing the a significant increase in quality compared to 1.7 despite the faster
 performance.
 
 
-astcenc 2.5 vs ISPC TexComp
-===========================
+## astcenc 2.5 vs ISPC TexComp
 
 The previous section shows that we've made a huge improvement, but we had a
 large gap to close vs ITC, so where did we get to there?
 
 Well, pretty close.
 
-4x4 blocks
-----------
+### 4x4 blocks
 
 For 4x4 blocks our `-fast` splits the two ITC profiles. Our `-fastest` mode
 is similar to ITC's fastest mode, but given it's low image quality I discount
@@ -205,8 +198,7 @@ but in return you get an average of 1 dB PSNR improvement, which is a
 significant gain. In fact that's enough to offset an increase in block size,
 which could allow a game to reduce install size and GPU memory bandwidth.
 
-6x6 blocks
-----------
+### 6x6 blocks
 
 For 6x6 blocks the story is a little different. Here we can see that although
 the performance of `-fast` is similar, splitting the two ITC profiles, astcenc
@@ -231,8 +223,7 @@ visible improvement that's worth aiming for.
 
 ![asctenc 2.5 vs ITC 6x6 blocks]({{ "../../../assets/images/astcispc2/15-2.5-vs-itc-rel2-6x6.png" | relative_url }}){:.center-image}
 
-Conclusions
-===========
+## Conclusions
 
 The 2.5 release of astcenc has significantly closed the gap with ISPC TexComp's
 ASTC compressor, but hasn't consistently beaten it in both performance and
@@ -262,8 +253,7 @@ See the final section in my [earlier
 blog](../../../2020/03/02/astc-compared.html) for some non-photographic image
 comparisons.
 
-What next?
-----------
+### What next?
 
 Most of the work done to date for the 2.x series has really been to optimize
 the existing codec. We've streamlined code paths, added extensive use of SIMD

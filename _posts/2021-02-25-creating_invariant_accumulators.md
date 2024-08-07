@@ -20,9 +20,7 @@ point of this blog is that by the end of it you'll know how to write an
 invariant vector-length independent accumulator implementation, and some of
 the common pitfalls that occur along the way ...
 
-
-Floating-point is evil
-======================
+## Floating-point is evil
 
 The root cause of invariance problems is floating-point arithmetic. Due to the
 dynamic precision of floating-point numbers, the accuracy of the number
@@ -56,9 +54,7 @@ float result = (a + b) + (c + d);
 ... allows a CPU implementation to issue the two partial sums in parallel,
 whereas the original code requires the three additions to be run serially.
 
-
-Floating-point meets SIMD
-=========================
+## Floating-point meets SIMD
 
 As part of the optimization work for the `astcenc` 2.x series, I've been adding
 extensive vectorization for all of the usual architecture candidates: SSE, AVX,
@@ -66,8 +62,7 @@ and (of course) NEON. Many seemingly innocent patterns of SIMD usage introduce
 reassociation differences, and most months see me hunting down a new unintended
 variability that I've introduced ...
 
-Example pattern
----------------
+### Example pattern
 
 One of the basic building blocks of a texture compressor is the error summation
 loop. Given a candidate encoding, iterate through all of the texels and compute
@@ -105,9 +100,7 @@ for (/* */; i < texel_count; i++) {
 }
 ```
 
-
-Problem 1: it looks the same, but isn't really ...
-==================================================
+## Problem 1: it looks the same, but isn't really ...
 
 The vectorization above looks innocent enough. On the face of it, it is a
 simple like-for-like translation of the C code. However, this code has already
@@ -161,11 +154,9 @@ match the halving reduction pattern that the hardware SIMD instruction sets
 all use. So that's the first problem solved, at the expense of no-SIMD code
 size!
 
+## Problem 2: variable-width accumulators
 
-Problem 2: variable width accumulators
-======================================
-
-The next problem we hit was caused by variable width accumulators. When we are
+The next problem we hit was caused by variable-width accumulators. When we are
 targeting AVX2 the vectors are twice as wide, so the horizontal summation
 phase adds 8 values at a time before adding that into the accumulator. This is
 another association change, effectively changing from this in 4-wide code:
@@ -192,9 +183,7 @@ give statistically lower error, as we are combining two smaller numbers before
 combining into a larger one, which gives some scope for small errors to cancel
 out.
 
-
-Problem 3: variable sized loop tails
-====================================
+## Problem 3: variable-sized loop tails
 
 The final problem I hit was caused by the vector loop tails. The typical design
 for a vector loop is to round down to the nearest multiple of the vector width,
@@ -277,16 +266,13 @@ In practice invariance isn't really that hard, but the "obvious" way to write
 the code is a pit-trap, and you need to pay attention to the details to get
 a stable output.
 
-
-Other invariance issues
-=======================
+## Other invariance issues
 
 While not related to accumulators, we have hit other invariance issues related
 to SIMD implementations. I'll try to keep this up to date as we hit new issues
 so it becomes a bit of a reference page.
 
-Problem 4: Compiler settings
-----------------------------
+### Problem 4: Compiler settings
 
 If you want determinism you will need to ensure your compiler is in IEEE754
 strict mode. Optimizations for "fast math" can change associativity and
@@ -297,8 +283,7 @@ One common gotcha here is that Visual Studio defaults to `precise` math, not
 example by using fused operations to preserve intermediate precision, but as
 it's non-standard you must change that to `strict`.
 
-Problem 5: Fast approximations
-------------------------------
+### Problem 5: Fast approximations
 
 Many SIMD instruction sets include operations that give "fast" approximations of
 other operations, trading accuracy for speed.
@@ -321,8 +306,7 @@ across vendors, or even CPUs from the same vendor.
 In general, avoid. These instructions are past their prime, and on modern CPUs
 hardware you don't see any performance benefit anyway.
 
-Problem 6: Fused operations
----------------------------
+### Problem 6: Fused operations
 
 Many SIMD instruction sets include fused multiply-accumulate operations, either
 as simple FMA operations or as part of a composite such as a dot product. The
@@ -341,8 +325,7 @@ styles of FMA (fused mul-then-add, fused add-then-mul, fused mul-then-sub,
 etc.). We do support these, but only the user explicitly turns off invariance
 at build time.
 
-Problem 7: Standard library functions
--------------------------------------
+### Problem 7: Standard library functions
 
 A lot of the standard library operations that end up as hardware instructions
 seem pretty consistent across hardware implementations, but the more complex
@@ -366,8 +349,7 @@ problems, so you can trade accuracy for speed.
 the range of inputs you might use is critical to ensure your program doesn't
 run off into the weeds ...
 
-Problem 8: Stable min/max lane select
--------------------------------------
+### Problem 8: Stable min/max lane select
 
 While not related to accumulators, when [@aras_p](https://twitter.com/aras_p)
 contributed the new vector-length-agonistic SIMD last year, he found an issue
@@ -437,8 +419,7 @@ than a random match, because this changed which encoding was used for the rest
 of the search. This is a fun case of invariance issues that are not related to
 floating-point code; you'd have this problem with integer trackers too.
 
-Updates
-=======
+## Updates
 
 * **26 Feb '21:** Added a note to "Problem two" that the spilt summation
   accumulator has some side-effects on floating-point accuracy.

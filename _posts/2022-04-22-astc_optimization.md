@@ -8,8 +8,7 @@ After two years of incremental improvement the astcenc 3.6 release is around
 20 to 25 times faster than the 1.7 release I started with. This blog is a look
 at some of the techniques I used, and a few that I tried that didn't work.
 
-The Pareto frontier
-===================
+## The Pareto frontier
 
 Before I dive into details of the software optimization techniques, I need to
 talk about the the Pareto frontier and how it relates to users deploying
@@ -39,8 +38,7 @@ above - is effectively obsolete. A user should be choosing an alternative which
 gives more quality at the same performance, or more performance at the same
 quality.
 
-Pareto optimizations
---------------------
+### Pareto optimizations
 
 When optimizing a lossy compressor we don't need to keep identical image output
 because the user isn't expecting a specific output bit pattern anyway. The only
@@ -68,9 +66,7 @@ isn't a "better quality" option that can be used to recover any quality losses.
 We are therefore more careful with search-space reductions that impact the
 high quality modes, as that is quality permanently lost to the void.
 
-
-Optimizing along the frontier
-=============================
+## Optimizing along the frontier
 
 Most of the optimizations to the compressor have been about trying to manage
 the amount of encoding space that is searched during compression. Intelligently
@@ -83,8 +79,7 @@ a better result. As long as the quality loss is sufficiently low that we end up
 on the right side of the Pareto frontier, then these have usually proven to be
 good changes to make.
 
-Static search space reduction
------------------------------
+### Static search space reduction
 
 The biggest changes I made to the compressor were those that simply removed
 portions ASTC encoding space from consideration. There are valid encodings that
@@ -102,8 +97,7 @@ codec now only have to handle a single weight plane. This allows a significant
 simplification of this code path, which gives us improved performance for
 multi-partition searches.
 
-Dynamic search pace reduction
-------------------------------
+### Dynamic search pace reduction
 
 The second set of changes I made to the compressor were those that dynamically
 reduce the search-space based on predicted benefit of those encodings. This is
@@ -137,8 +131,7 @@ There is probably more opportunity here for compressor innovation to make
 better up-front predictions without the initial trials, but that's for the
 future ...
 
-Predictive extrapolation
-------------------------
+### Predictive extrapolation
 
 Texture compression is mostly about making a good initial guess and then
 applying iterative refinement to jiggle colors and weights around to improve
@@ -159,14 +152,12 @@ candidate. This is a remarkably effective technique! Most candidate encodings
 early out and, on average, we only run 10% of the refinement passes for medium
 quality searches.
 
-Code optimization
-=================
+## Code optimization
 
 This section of the blog is not about ASTC specifics at all, but more about
 general software optimization techniques that I found worked well.
 
-Vectorization
--------------
+### Vectorization
 
 The first tool in the toolbox for any data crunching workload has to be trying
 to apply vectorization to the problem. The biggest challenge with modern SIMD
@@ -192,8 +183,7 @@ is the vector select operation; x86-64 `vblend` uses the top bit in each lane
 to select which input register is used for the whole lane, whereas Arm NEON
 `bsl` simply does a bit-wise select so needs all bits in the lane set to 1.
 
-AoS to SoA data layout
-----------------------
+### AoS to SoA data layout
 
 Effective vectorization needs a lot of data in an easy-to-access stream layout
 so you don't waste cycles unpacking data. A heavy pivot to structure-of-array
@@ -214,8 +204,7 @@ RGB data without an alpha channel so using SoA-form means we can simply omit
 the alpha vector from the calculation. Doing this for the original AoS form
 would just give a partial vector, and does not give any speedup.
 
-Vectorized loop tails
----------------------
+### Vectorized loop tails
 
 When vectorizing data paths you need to work out how to handle any loop tail.
 You can include a scalar loop to clean up the loop tail but with loops that
@@ -236,8 +225,7 @@ added mask operations, and the register pressure of the masks themselves.
 However, for most short loops in astcenc this is usually still faster than a
 separate scalar tail loop.
 
-Branches
---------
+### Branches
 
 Modern processors only like branches that they are able to predict. Failing to
 predict a branch correctly can result in 10+ cycle stall while the processor
@@ -259,8 +247,7 @@ some overhead to packing scalar values into vector types so you can run select
 on them, but even with this messing about it's still normally a net-win given
 the high cost of the mispredictions.
 
-Specialization
---------------
+### Specialization
 
 Generic code is often slow code with a lot of control flow overhead to handle
 the various options that the generic path supports. One useful technique is
@@ -287,8 +274,7 @@ the codec:
 
 ... but there are many other more localized examples in the code.
 
-Data table compaction
----------------------
+### Data table compaction
 
 Caches matter. TLBs matter. If your algorithm churns your cache then your
 performance will take a massive hit. A L1 miss that hits in L2 takes ~20
@@ -320,8 +306,7 @@ gather operations only support 32-bit accesses, so there are cases where we
 could have used narrower types but were forced to promote to 32-bit so we could
 use hardware gathers.
 
-Deabstraction ...
------------------
+### Deabstraction
 
 Code with nicely modular functionality with clean interfaces and a high degree
 of orthogonality is great for maintainability and legibility. But it can be
@@ -335,8 +320,7 @@ only have to touch data once, can be a very powerful tool. BUT, remember that
 you are probably making your code less maintainable so only do this where it
 makes a significant difference.
 
-Link-time optimization
-----------------------
+### Link-time optimization
 
 Modern compilers support link-time optimization, which effectively allows
 code generation to optimize across files (translation units). I found this
@@ -352,23 +336,20 @@ often doesn't help because LTO has already optimized away the inefficiency.
 Helpful, but frustrating when you think you're on to a winner than winds up
 not actually helping ...
 
-Code deoptimization
-===================
+## Code deoptimization
 
 A lot of optimization work turns into trying things that turn out not to help,
 or which don't justify their complexity. Knowing what didn't work is probably
 just as useful as knowing what worked ...
 
-Decrementing loops
-------------------
+### Decrementing loops
 
 An old trick on the early Arm CPUs I started programming on was to use
 decrementing loops, which use zero as a terminator condition. The idea here was
 that compare with zero is less expensive than a compare with a non-zero value.
 I didn't really expect this to help on modern hardware, and it didn't ...
 
-Approximate SIMD reciprocals
-----------------------------
+### Approximate SIMD reciprocals
 
 The SSE instruction set includes some operations to compute approximations of
 the reciprocal and the reciprocal square root of a number. On some late 1990s
@@ -393,8 +374,7 @@ from the same vendor.
 
 Consign these intrinsics to the history books - they have no place in new code.
 
-Vectorizing long loops
-----------------------
+### Vectorizing long loops
 
 There are two functions in the top ten list that are only 30% vectorized, both
 of which have relatively long loop bodies with a large number of live
@@ -408,8 +388,7 @@ can mitigate register pressure issues - but you usually need to duplicate some
 memory loads or some computation that would have previously been shared - so
 I've found this very hit-and-miss.
 
-Wide vectorization
-------------------
+### Wide vectorization
 
 Optimizing for AVX2 gives us access to 8-wide vectors, which we typically use
 to target using SoA memory layout so we can write vector-length agnostic code.
@@ -429,8 +408,7 @@ There are definitely parts of the code where using 8-wide vectors has proven
 beyond my abilities to achieve a net gain in performance for AVX2, let alone
 the fallback case.
 
-Compacting variably-sparse memory
----------------------------------
+### Compacting variably-sparse memory
 
 ASTC uses a lot of data tables, and for the most part we store these as
 fixed-size structures which contain enough space for the worst-case texel
@@ -444,8 +422,7 @@ an actual pointer or an array offset for a packed array. Suddenly you put a
 dependent memory lookup on your critical path, so any gain is lost. Direct
 addressing is really useful and painful to lose.
 
-Useful tools
-============
+## Useful tools
 
 Serious optimization needs profiling so you know where to focus effort. I use a
 variety of profilers, depending on what I'm trying to do.
@@ -453,7 +430,7 @@ variety of profilers, depending on what I'm trying to do.
 I will profile release builds but with LTO turned off; it just makes too much
 of a mess of the data. Just be aware that you're not entirely profiling
 reality. The compressor uses a lot of inlined functions, so I will selectively
-disable inlining by manully tagging interesting functions on the call path I'm
+disable inlining by manually tagging interesting functions on the call path I'm
 looking at with "`__attribute__((noinline))`". Without this, you just see all
 the time in the first non-inlined function which is often not all that useful.
 
@@ -477,8 +454,7 @@ compilers - but being able to check that the compiler is doing a good job is
 an essential skill. As always [godbolt.org](https://godbolt.org/) is a
 great tool for checking multiple compilers and architectures quickly.
 
-Summary
-=======
+## Summary
 
 This blog outlines the major highlights. I'm sure I've forgotten to include
 something, so I'll keep this up to date with other tips and tricks that
@@ -491,8 +467,7 @@ turns out to be a dud!
 I hope you find this a useful source of inspiration! I have - just by writing
 this down I've thought of a few new ideas to try ...
 
-Follow ups
-==========
+## Follow ups
 
 **Update:** I realised while writing this blog that the NEON emulation of the
 `vblend` "test MSB for lane select" behavior was probably unnecessary most of
@@ -512,8 +487,7 @@ lanes based on their sign bit, so I added an explicit `select_msb()` variant
 for this use case. This is more expensive on NEON, but we only use it in one
 place in the codec so it's only a minor inconvenience.
 
-Updates
-=======
+## Updates
 
 * **23 Apr '22:** Added a section on tools.
 * **24 Apr '22:** Added sections on deabstraction and compacting

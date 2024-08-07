@@ -8,8 +8,7 @@ I've seen a few developers struggling to get Vulkan validation layers working
 for Android applications, so here is quick recipe to do it with the fewest
 moving parts.
 
-Method
-======
+## Method
 
 There are a few different ways to install layer drivers on Android. When doing
 this by hand, and for developer tools, it is convenient to load layers without
@@ -33,8 +32,7 @@ The basic sequence of steps is:
 _before_ the application, because the helper scripts use "run-as" to get
 permission to copy files into the application's file system partition.
 
-The layers
-==========
+## The layers
 
 The most important thing is to keep your layer drivers up to date. Use the
 latest Khronos validation layer binaries from GitHub, not the layer drivers
@@ -57,15 +55,12 @@ headaches. You can find them here:
 [1]: https://github.com/KhronosGroup/Vulkan-ValidationLayers/releases
 
 
-The scripts
-===========
+## The scripts
 
 The scripts below are Bash scripts, but are trivial enough to translate into
 other shell syntax as needed.
 
-
-Install script
---------------
+### Install script
 
 ```bash
 APP=com.your.app.here
@@ -80,8 +75,7 @@ adb shell settings put global gpu_debug_layer_app $LAYER_APP
 adb shell settings put global gpu_debug_layers $LAYER_NAME
 ```
 
-Uninstall script
-----------------
+### Uninstall script
 
 ```bash
 APP=com.your.app.here
@@ -105,8 +99,7 @@ installed in the application directory, so you can remove the
 `adb shell run-as $APP rm $LAYER_LIB` step if you want to make this script
 application agnostic.
 
-Footnotes
-=========
+## Footnotes
 
 Android is intolerant of missing layer drivers. If you leave debug layers
 enabled in the Android settings but delete the layer library you will get a
@@ -115,7 +108,6 @@ uninstall script (or at least the part which clears the settings) and try
 again.
 
 
-Updates
-=======
+## Updates
 
 * **20 Apr '22:** Added a note on importance of using the Khronos layers.

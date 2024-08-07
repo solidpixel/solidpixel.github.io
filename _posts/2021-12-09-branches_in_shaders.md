@@ -12,8 +12,7 @@ topic, looking at branches and loops.
 **TLDR:** Used sensibly, branches are perfectly fine in modern GPU hardware.
 But there are some recommendations to get best performance out of them.
 
-Taxonomy of branch execution
-============================
+## Taxonomy of branch execution
 
 Shader programs are a sequence of instructions that make the GPU "do"
 something. For the purposes of this blog a branch is an instruction that can
@@ -21,8 +20,7 @@ conditionally change the flow of control through that sequence.
 
 So, what makes branches expensive for GPUs?
 
-Ancient history
----------------
+### Ancient history
 
 The original reason for the advice to avoid branches was quite simple. The
 very early programmable shader core hardware didn't actually support them!
@@ -41,8 +39,7 @@ hardware.
 For this generation of hardware, branches were therefore definitely "bad".
 Luckily for us this is now ancient history and not relevant to modern GPUs.
 
-DSP-like hardware
------------------
+### DSP-like hardware
 
 The next generations of hardware added support for native branches, allowing
 all of the control flow constructs that you would expect to see supported in a
@@ -158,8 +155,7 @@ this generation of hardware in some older mobile devices, so beware if you are
 targeting devices that are 6+ years old, but it's also now mostly consigned to
 history.
 
-Scalar warp/wave hardware
--------------------------
+### Scalar warp/wave hardware
 
 Modern hardware is nearly all warp/wave based. In these designs the compiler
 generates a scalar instruction stream for each thread, and the hardware finds
@@ -198,14 +194,12 @@ For modern hardware branches are therefore not "free", as you will need
 compares and the branch itself, but they are pretty inexpensive so don't be too
 concerned about using them in moderation.
 
-Realities
-=========
+## Realities
 
 Okay, so branches are no longer "bad", but there are recommendations to get the
 best performance.
 
-Beware of warp/wave divergence
-------------------------------
+### Beware of warp/wave divergence
 
 Every thread in a warp/wave must run the same instruction. Branches are
 therefore relatively cheap on modern hardware as long as the whole warp/wave
@@ -218,8 +212,7 @@ on both lanes then you've basically reinvented the original hardware where both
 paths get executed. Don't do this. When designing branchy code, try to have
 uniform branches where all threads branch the same way.
 
-Don't use clever maths to avoid branches
-----------------------------------------
+### Don't use clever maths to avoid branches
 
 On old hardware, shader developers evolved many tricks to avoid branches, using
 arithmetic sequences to replace the need for small branches. In my experience
@@ -230,16 +223,14 @@ do so, and the user "doing something clever" will normally defeat the compiler's
 optimizer. If you do try being clever please use a tool like Mali Offline
 Compiler to check it actually helps.
 
-Use literal constant loop limits
---------------------------------
+### Use literal constant loop limits
 
 Mali GPUs still benefit from fully unrolled small loops, in particular when
 accessing uniform or constant arrays based on loop iteration index. The
 compiler can only do this if it knows the loop count at compile time, so where
 possible use literal loop limits instead of limits read from uniforms.
 
-Still consider shader specialization
-------------------------------------
+### Still consider shader specialization
 
 Branches are now inexpensive, but not totally free. As a GPU performance
 engineer I'm still going to argue that compile-time shader specialization to
@@ -257,7 +248,6 @@ uniform branches to control shader behavior can significantly reduce the number
 of program variants you need to manage, which in turn helps other aspects of
 performance such as making batching easier. Find a pragmatic balance.
 
-Updates
-=======
+## Updates
 
 * **30 Mar '22:** Added a note on register occupancy limitations.
