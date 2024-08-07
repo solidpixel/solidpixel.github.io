@@ -112,7 +112,7 @@ sequence above for the older SIMD implementations that can't do it natively.
 
 ## Performance results
 
-Performance was a lot better than I expected, giving between 10 and 30% uplift.
+Performance was a lot better than I expected, giving between 14 and 63% uplift.
 Larger block sizes benefitted the most, as we get higher utilization of the
 wider vectors and fewer idle lanes.
 
