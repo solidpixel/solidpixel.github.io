@@ -5,7 +5,7 @@ tag: ASTC compression
 ---
 
 Recent Arm CPUs have provided a new SIMD instruction set, the Arm Scalable
-Vector Extensions (SVE). SVE makes the ISA independent of vector length,
+Vector Extension (SVE). SVE makes the ISA independent of vector length,
 allowing CPUs to provide different performance points without having to invent
 a new ISA each time.
 
@@ -14,15 +14,13 @@ the Arm Neoverse V1 CPU provides a 256-bit SVE implementation. The wider
 vector implementation was something I just had to try and optimize `astcenc`
 compression for ...
 
-What is SVE?
-============
+## What is SVE?
 
 The Scalable Vector Extension is a recent extension to the Arm ISA, providing
-a new SIMD instruction set that exists alongside the existing NEON instructions.
+a new SIMD instruction set that lives alongside the existing NEON instructions.
 It brings a collection of interesting new capabilities.
 
-Variable vector lengths
------------------------
+### Variable vector lengths
 
 The most commonly known feature of SVE is the "scalable" aspect. The ISA does
 not define a fixed vector length, allowing each CPU design to choose a vector
@@ -30,14 +28,14 @@ length that meets its cost/performance goal.
 
 It is possible to write vector-length agnostic (VLA) software that allows a
 single binary to run on any SVE implementation. However, this is not required
-and it also possible to write code that requires a specific vector length.
+and it also possible to write code that requires a specific vector length
+that is known at compile time.
 
-Predicated operations
----------------------
+### Predicated operations
 
 Most operations in SVE allow lane predication, using dedicated predicate mask
-registers to control which parts of a register are modified by an operation,
-read from memory, or written to memory.
+registers to control which parts of a data register are modified by an
+operation, read from memory, or written to memory.
 
 Predicates have two useful advantages.
 
@@ -50,8 +48,7 @@ which is a lot compared to SSE and AVX2 which only have 16, but even this
 gets tight when vectorizing data using structure-of-arrays striped data layouts.
 More registers always helps ...
 
-Native scatter/gather operations
---------------------------------
+### Native scatter/gather operations
 
 NEON has the `vtbl` family of operations, which allow efficient indexed lookup
 from a register-based table, but the fact the table is held in registers limits
@@ -63,9 +60,7 @@ load/store implementation of a 8-wide 32-bit gather-load is no faster than
 doing 4x 32-bit pairwise loads. However, it avoids all the overhead of
 converting to-and-from scalar code that NEON requires.
 
-
-Adoption approach
-=================
+## Adoption approach
 
 For the `astcenc` implementation of SVE I decided to implement a fixed-width
 256-bit implementation, where the vector length is known at compile time.
@@ -94,15 +89,28 @@ SVE to augment 128-bit operations, such as using `vec4` gathers. In these cases
 we just need to manually use the SVE predicate to disable the top 128 bits
 when touching memory.
 
+### The implementation
 
-Performance results
-===================
+The implementation was relatively straight-forward. The style of the SVE
+intrinsics is very similar NEON, so I had a basic implementation up and running
+in an afternoon. The hardest part was getting a new enough compiler (Clang 17)
+to pick up a pre-packaged version NEON-SVE bridge header, which allows
+conversion between NEON and SVE data types.
 
-The implementation was relatively straight-forward. The SVE intrinsics are very
-similar NEON, so I had a basic implementation up and running in an afternoon.
-The hardest part was getting a new enough compiler (Clang 17) to pick up a
-pre-packaged version NEON-SVE bridge header, which allows conversion between
-NEON and SVE data types.
+There were a few cases where the abstraction given by our SIMD library needed
+refactoring to benefit from the new capabilities in SVE. For example, the
+codec uses narrowing stores where we store the bottom 8 bits from each
+32-bit vector lane. The original API, designed as a thin wrapper around
+SSE/AVX2/NEON, exposed this as two separate operations:
+
+* Pack values to the bottom lanes*8 bits of a register.
+* Store the bottom lanes*8 bits of a register to memory.
+
+To benefit from SVE, the wrapper API abstraction needed raising to expose
+the higher-level concept of a narrowing store, emulating this with the
+sequence above for the older SIMD implementations that can't do it natively.
+
+## Performance results
 
 Performance was a lot better than I expected, giving between 10 and 30% uplift.
 Larger block sizes benefitted the most, as we get higher utilization of the
@@ -124,9 +132,7 @@ reasons seem to be:
   predicated load/store, which is more expensive when emulated in the NEON
   implementation.
 
-
-Useful operations
-=================
+## Useful operations
 
 The following operations were notable improvements over NEON equivalents.
 
@@ -144,9 +150,7 @@ The following operations were notable improvements over NEON equivalents.
   register lane from contiguous memory, without needing manual post-load
   expansion.
 
-
-Future work
-===========
+## Future work
 
 I've only just scratched the surface of SVE with an implementation that is
 mostly a direct port of the original NEON implementation, except for the cases
@@ -164,9 +168,7 @@ Specifically for SVE, in moving away from floating-point we also remove the
 invariance issues, which means we should be able to write this new codec in a
 way that is amenable to SVE's preferred VLA style.
 
-
-Resources
-=========
+## Resources
 
 * [Introduction to SVE][SVIG]
 * [Arm SIMD Intrinsics Explorer][AIEX]
@@ -180,7 +182,7 @@ Resources
 
 [INAC]: {% link _posts/2021-02-25-creating_invariant_accumulators.md %}
 
-Updates
-=======
+## Updates
 
-* 2024/08/06: Added widening loads to useful operation list.
+* **6 Aug '24:** Added widening loads to useful operation list.
+* **7 Aug '24:** Added note on higher-level abstractions in SIMD library.
