@@ -178,7 +178,7 @@ the vector. This is slightly slower, but this is a price we must pay if we
 want to achieve an invariant output.
 
 **Note:** It's worth noting that this approach is the wrong thing to do if your
-aim is to minimize floating point error. The AVX2 implementation here would
+aim is to minimize floating-point error. The AVX2 implementation here would
 give statistically lower error, as we are combining two smaller numbers before
 combining into a larger one, which gives some scope for small errors to cancel
 out.
@@ -274,14 +274,19 @@ so it becomes a bit of a reference page.
 
 ### Problem 4: Compiler settings
 
-If you want determinism you will need to ensure your compiler is in IEEE754
-strict mode. Optimizations for "fast math" can change associativity and
-introduce invariance problems, so make sure they are turned off.
+In the general case, if you want determinism you will need to ensure your
+compiler is conforming to IEEE754 associativity rules. Optimizations for "fast
+math" can change associativity and introduce invariance problems, so make sure
+they are turned off.
 
-One common gotcha here is that Visual Studio defaults to `precise` math, not
-`strict` math. Precise math actually gives better precision than `strict`, for
-example by using fused operations to preserve intermediate precision, but as
-it's non-standard you must change that to `strict`.
+Full `strict` mode is only needed if you care about exact `fenv()` and exception
+behavior. My suggested default settings are to use `precise` floating-point but
+with contractions, such as FMA and DOT product extensions, explicitly disabled.
+
+**Note:** If you are supporting multiple compilers, beware that the default
+floating-point mode and contraction behavior is inconsistent across compilers
+and even across versions of the same compiler. Be explicit about what you need
+to get guarantees of cross-compiler portability.
 
 ### Problem 5: Fast approximations
 
@@ -425,3 +430,5 @@ floating-point code; you'd have this problem with integer trackers too.
   accumulator has some side-effects on floating-point accuracy.
 * **26 Feb '21:** Added the "Other invariance issues" section.
 * **28 Feb '21:** Added the standard library topic to "Other issues".
+* **25 Aug '24:** Updated advice on compiler settings to suggest `precise`,
+  after Ryg reminded me that `strict` isn't really needed.
