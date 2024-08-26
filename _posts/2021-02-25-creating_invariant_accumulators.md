@@ -314,17 +314,24 @@ hardware you don't see any performance benefit anyway.
 ### Problem 6: Fused operations
 
 Many SIMD instruction sets include fused multiply-accumulate operations, either
-as simple FMA operations or as part of a composite such as a dot product. The
-goal of fusing in these cases is to increase precision - the intermediate
-value that is added into the accumulator sum is only transient inside the
-hardware so can be stored at higher precision than a 32-bit float in a
-register.
+as simple FMA operations or as part of a composite such as a dot product. Fused
+operations are usually faster, as well as running at increasing precision
+because intermediate values are transient inside the hardware and can be stored
+at higher precision than a 32-bit float in a register.
 
-This is great for floating point error, but bad for invariance as we cannot
-reproduce this consistently across instruction sets, so they also end up on the
-ban list.
+The performance would be great for us, but the higher intermediate precision is
+a killer for invariance because it cannot be sensibly emulated in other ISAs.
+Automatic compiler-generated contractions therefore end up on the ban list.
 
-**Note:** These can give good performance benefits, as we have so many
+**Note 1:** Ryg points out that you can safely use manually inserted
+contractions in cases where you can guarantee that the intermediate value is
+exactly representable in 32-bit floating-point. One useful case for compressors
+is exploiting the fact that all integer values less than 2<sup>24</sup>
+(1,677,216) can be represented exactly. While this is a relatively low range it
+is perfect for handling error summation, as we are processing small blocks of
+e.g. 8-bit color and 6-bit weights.
+
+**Note 2:** These can give good performance benefits, as we have so many
 operations that look like FMAs and modern FMA ISA extensions can fuse many
 styles of FMA (fused mul-then-add, fused add-then-mul, fused mul-then-sub,
 etc.). We do support these, but only the user explicitly turns off invariance
@@ -424,11 +431,19 @@ than a random match, because this changed which encoding was used for the rest
 of the search. This is a fun case of invariance issues that are not related to
 floating-point code; you'd have this problem with integer trackers too.
 
+**Note:** Ryg points out that another way to do this is to store the index
+into the low bits of the best error mantissa, so you can pack error and index
+into a single sortable value. Indices are unique so you guarantee a single
+winner, and the precision loss is negligible even with ASTC needing to store a
+12-bit index.
+
 ## Updates
 
-* **26 Feb '21:** Added a note to "Problem two" that the spilt summation
-  accumulator has some side-effects on floating-point accuracy.
-* **26 Feb '21:** Added the "Other invariance issues" section.
-* **28 Feb '21:** Added the standard library topic to "Other issues".
+* **26 Feb '21:** Added "Other invariance issues" topic.
+* **28 Feb '21:** Added "Standard library" topic.
 * **25 Aug '24:** Updated advice on compiler settings to suggest `precise`,
-  after Ryg reminded me that `strict` isn't really needed.
+  thanks Ryg.
+* **25 Aug '24:** Added note on using manual contractions.
+* **25 Aug '24:** Added note on using packing index into mantissa for sorts.
+
+Thanks to Aras and Ryg for the contributions and corrections.
