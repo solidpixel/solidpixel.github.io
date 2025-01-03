@@ -70,8 +70,8 @@ LAYER_NAME=VK_LAYER_KHRONOS_validation
 adb push $LAYER_LIB /data/local/tmp
 adb shell run-as $APP cp /data/local/tmp/$LAYER_LIB .
 adb shell settings put global enable_gpu_debug_layers 1
-adb shell settings put global gpu_debug_app $LAYER_APP
-adb shell settings put global gpu_debug_layer_app $LAYER_APP
+adb shell settings put global gpu_debug_app $APP
+adb shell settings put global gpu_debug_layer_app $APP
 adb shell settings put global gpu_debug_layers $LAYER_NAME
 ```
 
@@ -80,7 +80,6 @@ adb shell settings put global gpu_debug_layers $LAYER_NAME
 ```bash
 APP=com.your.app.here
 LAYER_LIB=libVkLayer_khronos_validation.so
-LAYER_NAME=VK_LAYER_KHRONOS_validation
 
 adb shell rm /data/local/tmp/$LAYER_LIB
 adb shell run-as $APP rm $LAYER_LIB
@@ -93,7 +92,7 @@ adb shell settings delete global gpu_debug_layer_app
 The important parts of this script are the clearing of the settings. This is
 sufficient to disable layers in the Android loader.
 
-I prefer to leave no trace of teh tooling, and remove the layer library too.
+I prefer to leave no trace of the tooling, and remove the layer library too.
 The layer will get removed when you uninstall the application, as it's
 installed in the application directory, so you can remove the
 `adb shell run-as $APP rm $LAYER_LIB` step if you want to make this script
